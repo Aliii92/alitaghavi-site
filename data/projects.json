@@ -1,0 +1,82 @@
+[
+  {
+    "id": "alba-residences",
+    "title": "Alba Residences",
+    "developer": "OMNIYAT",
+    "area": "Palm Jumeirah",
+    "subArea": "Waterfront",
+    "startingPrice": "Price on request",
+    "paymentPlan": "Available on request",
+    "handoverDate": "To be announced",
+    "bedrooms": "Limited residences",
+    "description": "A signature ultra-luxury development redefining modern living through architectural excellence and exclusive design.",
+    "features": [
+      "Developed by Omniyat",
+      "Ultra-premium design",
+      "Limited collection"
+    ],
+    "image": "https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&w=1200&q=80",
+    "whatsappLink": "",
+    "featured": true,
+    "owner": "ali"
+  },
+  {
+    "id": "armani-beach-residences",
+    "title": "Armani Beach Residences",
+    "developer": "ARMANI BRANDED",
+    "area": "Palm Jumeirah",
+    "subArea": "Beachfront",
+    "startingPrice": "Price on request",
+    "paymentPlan": "Available on request",
+    "handoverDate": "To be announced",
+    "bedrooms": "Branded residences",
+    "description": "Rare branded beachfront living combining Italian design excellence with Palm Jumeirah's prestige.",
+    "features": [
+      "Branded interiors",
+      "Beachfront location",
+      "Ultra-luxury positioning"
+    ],
+    "image": "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80",
+    "whatsappLink": "",
+    "featured": true,
+    "owner": "ali"
+  },
+  {
+    "id": "eywa",
+    "title": "EYWA",
+    "developer": "WELLNESS INNOVATION",
+    "area": "Business Bay",
+    "subArea": "Dubai Water Canal",
+    "startingPrice": "Price on request",
+    "paymentPlan": "Available on request",
+    "handoverDate": "To be announced",
+    "bedrooms": "Wellness residences",
+    "description": "Next-generation wellness residences combining luxury design with advanced health-focused technology.",
+    "features": [
+      "Wellness concept",
+      "Canal and skyline views",
+      "Highly differentiated product"
+    ],
+    "image": "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80",
+    "whatsappLink": "",
+    "featured": true,
+    "owner": "ali"
+  },
+  {
+    "id": "project-1776929670200",
+    "owner": "ali",
+    "title": "Bearau Lamar Commercial Tower",
+    "developer": "REFINE",
+    "area": "Business Bay",
+    "subArea": "Business Bay",
+    "startingPrice": "38500000",
+    "paymentPlan": "60/40",
+    "handoverDate": "Q1/2029",
+    "bedrooms": "",
+    "description": "Bearau Lamar Commercial Tower is a premier commercial complex by developer Lamar Development, presented by the agency Refine Development Management, located in Business Bay. The project includes six buildings with a ground floor and twelve to twenty-one levels.\n\nMultiple sides of the property offer pristine waterfront views of the Dubai Canal.\n\nBearau Lamar Commercial Tower offers premium, large-scale office spaces. The project features ultra-luxury interiors in common areas and flexible office designs that owners can customize.\n\nThe project introduces a business and arts library, a cultural district with art exhibition spaces, a luxury cinema hall, and multiple performance areas.\n\nThanks to its strategic location, the complex provides quick access to key destinations, including The Dubai Mall and Burj Khalifa - within 10 minutes, Jumeirah Beach - 17 minutes, and Dubai International Airport can be reached in 19 minutes.\n\nFor sale:\n\nRetail - from 38 500 000 AED / 6 200 - 10 400 sq. ft.\n\nOffice - from 39 506 925 AED / 6 415 - 9 677 sq. ft.\n\nEOI: 10%\n\nThe launch date will be announced soon",
+    "features": [],
+    "image": "/uploads/project-1776929670200-1776929970624.png",
+    "whatsappLink": "",
+    "featured": false
+  }
+]

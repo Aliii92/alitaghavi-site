@@ -1,0 +1,50 @@
+[
+  {
+    "id": "palm-jumeirah",
+    "slug": "palm-jumeirah",
+    "name": "Palm Jumeirah",
+    "aliases": [
+      "Palm Jumeirah"
+    ],
+    "note": "Explore curated ready properties in Palm Jumeirah, from branded beachfront residences to premium waterfront homes ideal for end-users and investors.",
+    "image_url": "/uploads/area-palm-jumeirah-1776780044675.png",
+    "notes": [
+      "Prime waterfront lifestyle",
+      "High rental demand",
+      "Mix of investor-ready and end-user properties",
+      "Price range from AED 3.5M to AED 11.5M"
+    ]
+  },
+  {
+    "id": "downtown",
+    "slug": "downtown",
+    "name": "Downtown",
+    "aliases": [
+      "Downtown",
+      "Downtown Dubai"
+    ],
+    "note": "Iconic city living with Burj Khalifa views, global demand, and proven rental appeal.",
+    "image_url": "/uploads/area-downtown-1776779379475.png"
+  },
+  {
+    "id": "bluewaters",
+    "slug": "bluewaters",
+    "name": "Bluewaters",
+    "aliases": [
+      "Bluewaters",
+      "Bluewaters Residence"
+    ],
+    "note": "A refined waterfront destination with sea views, landmark lifestyle appeal, and curated luxury residences.",
+    "image_url": "/uploads/area-bluewaters-1776843833834.png"
+  },
+  {
+    "id": "meydan",
+    "slug": "meydan",
+    "name": "Meydan",
+    "aliases": [
+      "Meydan"
+    ],
+    "note": "A strategic growth district for villas, new luxury communities, and long-term upside.",
+    "image_url": "/uploads/area-meydan-1776843664059.png"
+  }
+]
