@@ -1,10 +1,20 @@
+create extension if not exists pgcrypto;
+
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
 create table if not exists public.properties (
   id text primary key,
-  owner text not null default 'ali',
   title text not null,
   area text not null,
   building text not null,
-  category text not null default 'ready',
   inventory_type text not null default 'Ready',
   property_type text,
   bedrooms text,
@@ -12,22 +22,56 @@ create table if not exists public.properties (
   price text,
   view text,
   furnishing text,
-  status text,
+  status text default 'Available',
   short_description text,
   notes text,
   image_url text,
   featured boolean not null default false,
   whatsapp_link text,
-  created_at timestamptz not null default now()
+  owner text not null default 'ali',
+  category text not null default 'ready',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
+
+alter table public.properties
+  add column if not exists title text,
+  add column if not exists area text,
+  add column if not exists building text,
+  add column if not exists inventory_type text default 'Ready',
+  add column if not exists property_type text,
+  add column if not exists bedrooms text,
+  add column if not exists size text,
+  add column if not exists price text,
+  add column if not exists view text,
+  add column if not exists furnishing text,
+  add column if not exists status text default 'Available',
+  add column if not exists short_description text,
+  add column if not exists notes text,
+  add column if not exists image_url text,
+  add column if not exists featured boolean not null default false,
+  add column if not exists whatsapp_link text,
+  add column if not exists owner text not null default 'ali',
+  add column if not exists category text not null default 'ready',
+  add column if not exists created_at timestamptz not null default now(),
+  add column if not exists updated_at timestamptz not null default now();
+
+create index if not exists properties_owner_idx on public.properties(owner);
+create index if not exists properties_area_idx on public.properties(area);
+create index if not exists properties_building_idx on public.properties(building);
+create index if not exists properties_category_idx on public.properties(category);
+
+drop trigger if exists trg_properties_updated_at on public.properties;
+create trigger trg_properties_updated_at
+before update on public.properties
+for each row
+execute function public.set_updated_at();
 
 create table if not exists public.resale_off_plan (
   id text primary key,
-  owner text not null default 'ali',
   title text not null,
   area text not null,
   building text not null,
-  category text not null default 'resale-off-plan',
   inventory_type text not null default 'Resale Off-Plan',
   property_type text,
   bedrooms text,
@@ -35,18 +79,52 @@ create table if not exists public.resale_off_plan (
   price text,
   view text,
   furnishing text,
-  status text,
+  status text default 'Available',
   short_description text,
   notes text,
   image_url text,
   featured boolean not null default false,
   whatsapp_link text,
-  created_at timestamptz not null default now()
+  owner text not null default 'ali',
+  category text not null default 'resale-off-plan',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
+
+alter table public.resale_off_plan
+  add column if not exists title text,
+  add column if not exists area text,
+  add column if not exists building text,
+  add column if not exists inventory_type text default 'Resale Off-Plan',
+  add column if not exists property_type text,
+  add column if not exists bedrooms text,
+  add column if not exists size text,
+  add column if not exists price text,
+  add column if not exists view text,
+  add column if not exists furnishing text,
+  add column if not exists status text default 'Available',
+  add column if not exists short_description text,
+  add column if not exists notes text,
+  add column if not exists image_url text,
+  add column if not exists featured boolean not null default false,
+  add column if not exists whatsapp_link text,
+  add column if not exists owner text not null default 'ali',
+  add column if not exists category text not null default 'resale-off-plan',
+  add column if not exists created_at timestamptz not null default now(),
+  add column if not exists updated_at timestamptz not null default now();
+
+create index if not exists resale_off_plan_owner_idx on public.resale_off_plan(owner);
+create index if not exists resale_off_plan_area_idx on public.resale_off_plan(area);
+create index if not exists resale_off_plan_building_idx on public.resale_off_plan(building);
+
+drop trigger if exists trg_resale_off_plan_updated_at on public.resale_off_plan;
+create trigger trg_resale_off_plan_updated_at
+before update on public.resale_off_plan
+for each row
+execute function public.set_updated_at();
 
 create table if not exists public.off_plan_projects (
   id text primary key,
-  owner text not null default 'ali',
   title text not null,
   developer text,
   area text,
@@ -60,8 +138,37 @@ create table if not exists public.off_plan_projects (
   image text,
   whatsapp_link text,
   featured boolean not null default false,
-  created_at timestamptz not null default now()
+  owner text not null default 'ali',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
+
+alter table public.off_plan_projects
+  add column if not exists title text,
+  add column if not exists developer text,
+  add column if not exists area text,
+  add column if not exists sub_area text,
+  add column if not exists starting_price text,
+  add column if not exists payment_plan text,
+  add column if not exists handover_date text,
+  add column if not exists bedrooms text,
+  add column if not exists description text,
+  add column if not exists features jsonb not null default '[]'::jsonb,
+  add column if not exists image text,
+  add column if not exists whatsapp_link text,
+  add column if not exists featured boolean not null default false,
+  add column if not exists owner text not null default 'ali',
+  add column if not exists created_at timestamptz not null default now(),
+  add column if not exists updated_at timestamptz not null default now();
+
+create index if not exists off_plan_projects_owner_idx on public.off_plan_projects(owner);
+create index if not exists off_plan_projects_area_idx on public.off_plan_projects(area);
+
+drop trigger if exists trg_off_plan_projects_updated_at on public.off_plan_projects;
+create trigger trg_off_plan_projects_updated_at
+before update on public.off_plan_projects
+for each row
+execute function public.set_updated_at();
 
 create table if not exists public.prime_areas (
   id text primary key,
@@ -90,8 +197,44 @@ create table if not exists public.prime_areas (
   featured boolean not null default true,
   active boolean not null default true,
   display_order integer not null default 0,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
-create unique index if not exists prime_areas_owner_slug_idx
-  on public.prime_areas (owner, slug);
+alter table public.prime_areas
+  add column if not exists owner text not null default 'ali',
+  add column if not exists slug text,
+  add column if not exists name text,
+  add column if not exists area_name text,
+  add column if not exists short_title text,
+  add column if not exists overview_card_title text,
+  add column if not exists aliases jsonb not null default '[]'::jsonb,
+  add column if not exists note text,
+  add column if not exists excerpt text,
+  add column if not exists short_description text,
+  add column if not exists hero_title text,
+  add column if not exists featured_image text,
+  add column if not exists content_body text,
+  add column if not exists full_description text,
+  add column if not exists lifestyle_text text,
+  add column if not exists investment_analysis text,
+  add column if not exists bullet_points jsonb not null default '[]'::jsonb,
+  add column if not exists notes jsonb not null default '[]'::jsonb,
+  add column if not exists image_url text,
+  add column if not exists seo_title text,
+  add column if not exists seo_description text,
+  add column if not exists gallery_images jsonb not null default '[]'::jsonb,
+  add column if not exists featured boolean not null default true,
+  add column if not exists active boolean not null default true,
+  add column if not exists display_order integer not null default 0,
+  add column if not exists created_at timestamptz not null default now(),
+  add column if not exists updated_at timestamptz not null default now();
+
+create unique index if not exists prime_areas_owner_slug_idx on public.prime_areas (owner, slug);
+create index if not exists prime_areas_owner_idx on public.prime_areas(owner);
+
+drop trigger if exists trg_prime_areas_updated_at on public.prime_areas;
+create trigger trg_prime_areas_updated_at
+before update on public.prime_areas
+for each row
+execute function public.set_updated_at();
