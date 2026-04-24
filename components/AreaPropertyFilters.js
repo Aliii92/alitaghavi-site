@@ -1,8 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import AreaPropertyCard from "./AreaPropertyCard";
 import BuildingGroupedListings from "./BuildingGroupedListings";
+import {
+  offPlanProjectsPathFor,
+  readyPropertiesPathFor,
+  resaleOffPlanPathFor
+} from "../lib/public-context.js";
 
 const defaultWhatsAppNumber = "971522950316";
 
@@ -306,6 +312,7 @@ export default function AreaPropertyFilters({
   showResults = true,
   locale = "en"
 }) {
+  const pathname = usePathname();
   const isFa = locale === "fa";
   const t = searchCopy[isFa ? "fa" : "en"];
   const bedroomOptions = useMemo(() => localizeOptions(bedroomOptionValues, t), [t]);
@@ -324,6 +331,16 @@ export default function AreaPropertyFilters({
   const [handover, setHandover] = useState("all");
   const [activeDropdown, setActiveDropdown] = useState("");
   const shouldShowResults = showResults || searchSubmitted;
+  const routeMap = useMemo(
+    () => ({
+      all: owner === "negin" ? "/negin/listings" : "/listings",
+      ready: readyPropertiesPathFor(owner),
+      "off-plan": offPlanProjectsPathFor(owner),
+      "resale-off-plan": resaleOffPlanPathFor(owner),
+      ...(redirectBaseByCategory || {})
+    }),
+    [owner, redirectBaseByCategory]
+  );
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -383,31 +400,38 @@ export default function AreaPropertyFilters({
     });
   }, [bedrooms, category, handover, maxPrice, minPrice, properties, propertyType, query]);
 
-  function buildListingsUrl() {
-    const targetBase =
-      redirectBaseByCategory?.[category] ||
-      (category === "all" ? redirectBaseByCategory?.all : "") ||
-      redirectBase;
+  function buildListingsUrl(overrides = {}) {
+    const nextSearchInput = overrides.searchInput ?? searchInput;
+    const nextCategory = overrides.category ?? category;
+    const nextBedrooms = overrides.bedrooms ?? bedrooms;
+    const nextPropertyType = overrides.propertyType ?? propertyType;
+    const nextMinPrice = overrides.minPrice ?? minPrice;
+    const nextMaxPrice = overrides.maxPrice ?? maxPrice;
+    const nextHandover = overrides.handover ?? handover;
+    const targetBase = routeMap[nextCategory] || redirectBase;
     const params = new URLSearchParams();
-    if (searchInput.trim()) params.set("q", searchInput.trim());
-    if (category !== "all") params.set("category", category);
-    if (bedrooms !== "all") params.set("bedrooms", bedrooms);
-    if (propertyType !== "all") params.set("property_type", propertyType);
-    if (minPrice) params.set("min_price", minPrice);
-    if (maxPrice) params.set("max_price", maxPrice);
-    if (["off-plan", "resale-off-plan"].includes(category) && handover !== "all") params.set("handover", handover);
+    if (nextSearchInput.trim()) params.set("q", nextSearchInput.trim());
+    if (nextCategory !== defaultCategory || nextCategory === "all") params.set("category", nextCategory);
+    if (nextBedrooms !== "all") params.set("bedrooms", nextBedrooms);
+    if (nextPropertyType !== "all") params.set("property_type", nextPropertyType);
+    if (nextMinPrice) params.set("min_price", nextMinPrice);
+    if (nextMaxPrice) params.set("max_price", nextMaxPrice);
+    if (["off-plan", "resale-off-plan"].includes(nextCategory) && nextHandover !== "all") params.set("handover", nextHandover);
     const queryString = params.toString();
     return `${targetBase}${queryString ? `?${queryString}` : ""}`;
   }
 
+  function navigateTo(url) {
+    window.location.href = url;
+  }
+
   function applySearch(event) {
     event.preventDefault();
-
-    if (redirectMode) {
-      window.location.href = buildListingsUrl();
+    const url = buildListingsUrl();
+    if (redirectMode || url !== `${pathname}${window.location.search}`) {
+      navigateTo(url);
       return;
     }
-
     setQuery(searchInput);
     setSearchSubmitted(true);
   }
@@ -422,6 +446,33 @@ export default function AreaPropertyFilters({
     setMaxPrice("");
     setHandover("all");
     setSearchSubmitted(showResults);
+
+    const clearBase = routeMap[defaultCategory] || redirectBase;
+    const currentSearch = window.location.search;
+    const shouldNavigate =
+      pathname !== clearBase ||
+      currentSearch ||
+      category !== defaultCategory ||
+      bedrooms !== "all" ||
+      propertyType !== "all" ||
+      minPrice ||
+      maxPrice ||
+      handover !== "all";
+
+    if (shouldNavigate && !(pathname === "/" && defaultCategory === "all")) {
+      navigateTo(clearBase);
+    }
+  }
+
+  function handleCategoryChange(value) {
+    const nextHandover = ["off-plan", "resale-off-plan"].includes(value) ? handover : "all";
+    setCategory(value);
+    if (!["off-plan", "resale-off-plan"].includes(value)) setHandover("all");
+
+    const nextUrl = buildListingsUrl({ category: value, handover: nextHandover });
+    if (nextUrl !== `${pathname}${window.location.search}`) {
+      navigateTo(nextUrl);
+    }
   }
 
   return (
@@ -442,7 +493,7 @@ export default function AreaPropertyFilters({
         </label>
 
         {!hideCategory ? (
-          <FilterDropdown id="category" label={t.category} value={category} options={statusOptions} activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown} onChange={(value) => { setCategory(value); if (!["off-plan", "resale-off-plan"].includes(value)) setHandover("all"); }} />
+          <FilterDropdown id="category" label={t.category} value={category} options={statusOptions} activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown} onChange={handleCategoryChange} />
         ) : null}
         <FilterDropdown id="property-type" label={t.propertyType} value={propertyType} options={propertyTypeOptions} activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown} onChange={setPropertyType} />
         <FilterDropdown id="beds" label={t.beds} value={bedrooms} options={bedroomOptions} activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown} onChange={setBedrooms} />

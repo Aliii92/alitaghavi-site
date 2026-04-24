@@ -628,7 +628,7 @@ export default function NeginPage() {
             sourcePage="Negin Mohamadi Page"
             redirectBase="/negin/ready-properties"
             redirectBaseByCategory={{
-              all: "/negin/ready-properties",
+              all: "/negin/listings",
               ready: "/negin/ready-properties",
               "off-plan": "/negin/off-plan",
               "resale-off-plan": "/negin/resale-off-plan"

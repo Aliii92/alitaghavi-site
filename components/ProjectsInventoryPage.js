@@ -2,6 +2,7 @@ import LeadWhatsAppButton from "./LeadWhatsAppButton";
 import AreaPropertyFilters from "./AreaPropertyFilters";
 import { buildLeadPayload, buildPropertyWhatsAppUrl } from "../lib/whatsapp.js";
 import { offPlanProjectsPathFor, readyPropertiesPathFor, resaleOffPlanPathFor } from "../lib/public-context.js";
+import { readProperties } from "../lib/properties.js";
 import { projectToProperty, readProjects } from "../lib/projects.js";
 import { formatPriceDisplay } from "../lib/price.js";
 
@@ -90,6 +91,7 @@ export default async function ProjectsInventoryPage({ searchParams, owner = "ali
   const hasSearch = searchKeys.some((key) => params?.[key]);
   const projects = await readProjects();
   const projectProperties = projects.map(projectToProperty);
+  const searchableInventory = [...(await readProperties()), ...projectProperties];
   const phoneNumber = owner === "negin" ? "971505996547" : "971522950316";
   const homeHref = owner === "negin" ? "/negin" : "/";
   const projectsHref = offPlanProjectsPathFor(owner);
@@ -114,10 +116,16 @@ export default async function ProjectsInventoryPage({ searchParams, owner = "ali
 
         <section className="section listing-group">
           <AreaPropertyFilters
-            properties={projectProperties}
+            properties={searchableInventory}
             areaName="Dubai"
             sourcePage={owner === "negin" ? "Negin Off-Plan Projects Search" : "Ali Off-Plan Projects Search"}
             redirectBase={projectsHref}
+            redirectBaseByCategory={{
+              all: owner === "negin" ? "/negin/listings" : "/listings",
+              ready: readyPropertiesPathFor(owner),
+              "off-plan": offPlanProjectsPathFor(owner),
+              "resale-off-plan": resaleOffPlanPathFor(owner)
+            }}
             mode={hasSearch ? "results" : "redirect"}
             defaultCategory="off-plan"
             intro="Search off-plan projects by area, developer, bedroom mix, budget, and handover date."

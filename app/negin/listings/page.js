@@ -1,22 +1,22 @@
 import PropertiesInventoryPage from "../../../components/PropertiesInventoryPage";
 
 export const metadata = {
-  title: "Ready Properties in Dubai",
+  title: "Dubai Property Search with Negin Mohamadi",
   description:
-    "Browse shared ready property inventory from Ali Taghavi and Negin Mohamadi across Dubai's prime areas.",
+    "Search ready properties, off-plan projects, and resale off-plan opportunities through Negin Mohamadi's advisory flow.",
   alternates: {
-    canonical: "/ready-properties"
+    canonical: "/negin/listings"
   },
   openGraph: {
-    title: "Ready Properties in Dubai",
+    title: "Dubai Property Search with Negin Mohamadi",
     description:
-      "Browse shared ready property inventory across Dubai with advisor-led guidance.",
-    url: "/ready-properties"
+      "Search Dubai inventory across ready, off-plan, and resale off-plan categories inside Negin's flow.",
+    url: "/negin/listings"
   }
 };
 
 export const dynamic = "force-dynamic";
 
 export default function NeginListingsPage(props) {
-  return <PropertiesInventoryPage {...props} owner="negin" inventoryType="ready" />;
+  return <PropertiesInventoryPage {...props} owner="negin" inventoryType="all" />;
 }

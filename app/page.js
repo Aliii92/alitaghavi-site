@@ -779,7 +779,7 @@ export default function HomePage() {
             areaName="Dubai"
             redirectBase="/ready-properties"
             redirectBaseByCategory={{
-              all: "/ready-properties",
+              all: "/listings",
               ready: "/ready-properties",
               "off-plan": "/off-plan-projects",
               "resale-off-plan": "/resale-off-plan"

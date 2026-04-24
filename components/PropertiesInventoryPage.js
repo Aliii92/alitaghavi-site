@@ -5,6 +5,7 @@ import {
   isResaleOffPlanProperty,
   readProperties
 } from "../lib/properties.js";
+import { projectToProperty, readProjects } from "../lib/projects.js";
 import {
   offPlanProjectsPathFor,
   readyPropertiesPathFor,
@@ -52,6 +53,18 @@ function areaMetaFor(name, areas, fallbackItems = [], fallbackNote = "") {
 }
 
 function inventoryConfig(inventoryType) {
+  if (inventoryType === "all") {
+    return {
+      eyebrow: "Global Property Search",
+      title: "Search Dubai Properties Across Categories",
+      subtitle: "Move smoothly between ready properties, off-plan projects, and resale off-plan opportunities from one shared search experience.",
+      intro: "Search across ready, off-plan, and resale off-plan inventory by area, building, property type, bedrooms, and budget.",
+      cardDescription: "Curated opportunities across additional Dubai locations.",
+      cardButton: "View Properties",
+      category: "all"
+    };
+  }
+
   if (inventoryType === "resale-off-plan") {
     return {
       eyebrow: "Resale Off-Plan",
@@ -104,6 +117,7 @@ function NavBar({ owner = "ali" }) {
 }
 
 function filterPropertiesByInventory(properties, inventoryType) {
+  if (inventoryType === "all") return properties;
   if (inventoryType === "resale-off-plan") return properties.filter(isResaleOffPlanProperty);
   return properties.filter(isReadyProperty);
 }
@@ -113,7 +127,10 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
   const hasSearch = searchKeys.some((key) => params?.[key]);
   const config = inventoryConfig(inventoryType);
   const areas = (await readAreas()).filter((area) => area.owner === owner);
-  const properties = filterPropertiesByInventory(await readProperties(), inventoryType);
+  const baseProperties = await readProperties();
+  const projectProperties = (await readProjects()).map(projectToProperty);
+  const searchableInventory = [...baseProperties, ...projectProperties];
+  const properties = filterPropertiesByInventory(baseProperties, inventoryType);
   const propertiesByArea = groupByArea(properties);
   const areaBasePath = inventoryType === "resale-off-plan"
     ? `${owner === "negin" ? "/negin" : ""}/resale-off-plan`
@@ -166,15 +183,20 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
 
         <section className="section ready-search-section">
           <AreaPropertyFilters
-            properties={properties}
+            properties={searchableInventory}
             areaName="Dubai"
             advisorName={owner === "negin" ? "Negin Mohamadi" : "Ali Taghavi"}
             phoneNumber={owner === "negin" ? "971505996547" : "971522950316"}
             owner={owner}
             sourcePage={`${owner === "negin" ? "Negin" : "Ali"} ${config.eyebrow} Search`}
             redirectBase={overviewBasePath}
+            redirectBaseByCategory={{
+              all: owner === "negin" ? "/negin/listings" : "/listings",
+              ready: readyPropertiesPathFor(owner),
+              "off-plan": offPlanProjectsPathFor(owner),
+              "resale-off-plan": resaleOffPlanPathFor(owner)
+            }}
             defaultCategory={config.category}
-            hideCategory
             showResults={hasSearch}
             intro={config.intro}
           />

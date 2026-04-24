@@ -5,6 +5,7 @@ import {
   isResaleOffPlanProperty,
   readProperties
 } from "../lib/properties.js";
+import { projectToProperty, readProjects } from "../lib/projects.js";
 import {
   offPlanProjectsPathFor,
   readyPropertiesPathFor,
@@ -161,7 +162,10 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
   const { area } = await params;
   const config = inventoryConfig(inventoryType);
   const areas = (await readAreas()).filter((item) => item.owner === owner);
-  const allProperties = filterPropertiesByInventory(await readProperties(), inventoryType);
+  const readyAndResaleProperties = await readProperties();
+  const projectProperties = (await readProjects()).map(projectToProperty);
+  const searchableInventory = [...readyAndResaleProperties, ...projectProperties];
+  const allProperties = filterPropertiesByInventory(readyAndResaleProperties, inventoryType);
   const selectedArea = resolveSelectedArea(area, areas, allProperties, inventoryType);
   const promotedNames = promotedAreaNames(allProperties);
   const areaProperties = selectedArea
@@ -224,15 +228,20 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
 
           {areaProperties.length ? (
             <AreaPropertyFilters
-              properties={areaProperties}
+              properties={searchableInventory}
               areaName={selectedArea.name}
               advisorName={owner === "negin" ? "Negin Mohamadi" : "Ali Taghavi"}
               phoneNumber={owner === "negin" ? "971505996547" : "971522950316"}
               owner={owner}
               sourcePage={`${owner === "negin" ? "Negin" : "Ali"} ${config.eyebrow} Area Page: ${selectedArea.name}`}
               redirectBase={overviewPath}
+              redirectBaseByCategory={{
+                all: owner === "negin" ? "/negin/listings" : "/listings",
+                ready: owner === "negin" ? `/negin/listings/${selectedArea.slug}` : `/listings/${selectedArea.slug}`,
+                "off-plan": offPlanProjectsPathFor(owner),
+                "resale-off-plan": resaleOffPlanPathFor(owner)
+              }}
               defaultCategory={inventoryType}
-              hideCategory
               groupByBuilding
               initialVisiblePerGroup={3}
             />
