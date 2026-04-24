@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { normalizeOwner, ownerFromRequest } from "../../../lib/adminAuth.js";
 import { normalizeProject, readProjects, writeProjects } from "../../../lib/projects.js";
 
 function forbidden() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+
+function revalidateProjectPaths(owner) {
+  const paths = owner === "negin"
+    ? ["/negin", "/negin/off-plan", "/negin/projects"]
+    : ["/", "/off-plan-projects", "/projects"];
+  paths.forEach((path) => revalidatePath(path));
 }
 
 export async function GET(request) {
@@ -35,6 +43,7 @@ export async function POST(request) {
 
   projects.push(project);
   await writeProjects(projects);
+  revalidateProjectPaths(adminOwner);
 
   return NextResponse.json(project, { status: 201 });
 }

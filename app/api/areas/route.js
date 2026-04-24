@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { normalizeArea, readAreas, writeAreas } from "../../../lib/areas.js";
 import { normalizeOwner, ownerFromRequest } from "../../../lib/adminAuth.js";
 
 function forbidden() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+
+function revalidateAreaPaths(owner, slug = "") {
+  const paths = owner === "negin"
+    ? ["/negin", `/prime-areas/negin-${slug}`]
+    : ["/", `/prime-areas/${slug}`];
+  paths.filter(Boolean).forEach((path) => revalidatePath(path));
 }
 
 export async function GET(request) {
@@ -32,6 +40,7 @@ export async function POST(request) {
 
   areas.push(payload);
   await writeAreas(areas);
+  revalidateAreaPaths(adminOwner, payload.slug);
 
   return NextResponse.json(payload);
 }
@@ -50,6 +59,7 @@ export async function PUT(request) {
 
   areas[index] = normalizeArea({ ...areas[index], ...payload, owner: adminOwner }, adminOwner);
   await writeAreas(areas);
+  revalidateAreaPaths(adminOwner, areas[index].slug);
 
   return NextResponse.json(areas[index]);
 }
@@ -61,6 +71,7 @@ export async function DELETE(request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   const areas = await readAreas();
+  const removedArea = areas.find((area) => area.owner === adminOwner && (area.id === id || area.slug === id));
   const nextAreas = areas.filter((area) => !(area.owner === adminOwner && (area.id === id || area.slug === id)));
 
   if (nextAreas.length === areas.length) {
@@ -68,5 +79,6 @@ export async function DELETE(request) {
   }
 
   await writeAreas(nextAreas);
+  revalidateAreaPaths(adminOwner, removedArea?.slug || id);
   return NextResponse.json({ ok: true });
 }

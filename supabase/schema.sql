@@ -1,0 +1,97 @@
+create table if not exists public.properties (
+  id text primary key,
+  owner text not null default 'ali',
+  title text not null,
+  area text not null,
+  building text not null,
+  category text not null default 'ready',
+  inventory_type text not null default 'Ready',
+  property_type text,
+  bedrooms text,
+  size text,
+  price text,
+  view text,
+  furnishing text,
+  status text,
+  short_description text,
+  notes text,
+  image_url text,
+  featured boolean not null default false,
+  whatsapp_link text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.resale_off_plan (
+  id text primary key,
+  owner text not null default 'ali',
+  title text not null,
+  area text not null,
+  building text not null,
+  category text not null default 'resale-off-plan',
+  inventory_type text not null default 'Resale Off-Plan',
+  property_type text,
+  bedrooms text,
+  size text,
+  price text,
+  view text,
+  furnishing text,
+  status text,
+  short_description text,
+  notes text,
+  image_url text,
+  featured boolean not null default false,
+  whatsapp_link text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.off_plan_projects (
+  id text primary key,
+  owner text not null default 'ali',
+  title text not null,
+  developer text,
+  area text,
+  sub_area text,
+  starting_price text,
+  payment_plan text,
+  handover_date text,
+  bedrooms text,
+  description text,
+  features jsonb not null default '[]'::jsonb,
+  image text,
+  whatsapp_link text,
+  featured boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.prime_areas (
+  id text primary key,
+  owner text not null default 'ali',
+  slug text not null,
+  name text,
+  area_name text,
+  short_title text,
+  overview_card_title text,
+  aliases jsonb not null default '[]'::jsonb,
+  note text,
+  excerpt text,
+  short_description text,
+  hero_title text,
+  featured_image text,
+  content_body text,
+  full_description text,
+  lifestyle_text text,
+  investment_analysis text,
+  bullet_points jsonb not null default '[]'::jsonb,
+  notes jsonb not null default '[]'::jsonb,
+  image_url text,
+  seo_title text,
+  seo_description text,
+  gallery_images jsonb not null default '[]'::jsonb,
+  featured boolean not null default true,
+  active boolean not null default true,
+  display_order integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists prime_areas_owner_slug_idx
+  on public.prime_areas (owner, slug);

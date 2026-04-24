@@ -4599,5 +4599,26 @@
     "image_url": "",
     "featured": false,
     "whatsapp_link": "https://wa.me/971522950316"
+  },
+  {
+    "id": "property-1777047671762",
+    "owner": "ali",
+    "title": "Asss",
+    "area": "Meydan",
+    "building": "sss",
+    "category": "ready",
+    "inventory_type": "Ready",
+    "property_type": "apartment",
+    "bedrooms": "2",
+    "size": "1111",
+    "price": "AED 25900000",
+    "view": "JBR & Sea View",
+    "furnishing": "",
+    "status": "Available",
+    "short_description": "",
+    "notes": "",
+    "image_url": "",
+    "featured": false,
+    "whatsapp_link": ""
   }
 ]

@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { normalizeOwner, ownerFromRequest } from "../../../lib/adminAuth";
 import { normalizeProperty, readProperties, writeProperties } from "../../../lib/properties";
 
 function forbidden() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+
+function revalidatePropertyPaths(owner) {
+  const paths = owner === "negin"
+    ? ["/negin", "/negin/ready-properties", "/negin/listings", "/negin/resale-off-plan", "/negin/off-plan"]
+    : ["/", "/ready-properties", "/listings", "/resale-off-plan", "/off-plan-projects"];
+  paths.forEach((path) => revalidatePath(path));
 }
 
 export async function GET(request) {
@@ -36,6 +44,7 @@ export async function POST(request) {
 
   properties.push(property);
   await writeProperties(properties);
+  revalidatePropertyPaths(adminOwner);
 
   return NextResponse.json(property, { status: 201 });
 }
@@ -54,6 +63,7 @@ export async function PUT(request) {
 
   properties[index] = normalizeProperty({ ...properties[index], ...payload, owner: adminOwner }, properties[index].id);
   await writeProperties(properties);
+  revalidatePropertyPaths(adminOwner);
 
   return NextResponse.json(properties[index]);
 }
@@ -79,6 +89,7 @@ export async function DELETE(request) {
   }
 
   await writeProperties(nextProperties);
+  revalidatePropertyPaths(adminOwner);
 
   return NextResponse.json({ ok: true });
 }
