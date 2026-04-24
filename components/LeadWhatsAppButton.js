@@ -37,11 +37,11 @@ export default function LeadWhatsAppButton({ href, lead, className = "button wha
       // WhatsApp should still open even if local lead tracking fails.
     }
 
-    window.open(href, "_blank", "noopener,noreferrer");
+    window.location.href = href;
   }
 
   return (
-    <a className={className} href={href} target="_blank" rel="noopener noreferrer" onClick={handleClick}>
+    <a className={className} href={href} onClick={handleClick}>
       {children}
     </a>
   );

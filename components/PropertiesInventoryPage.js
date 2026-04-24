@@ -117,7 +117,7 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
   const propertiesByArea = groupByArea(properties);
   const areaBasePath = inventoryType === "resale-off-plan"
     ? `${owner === "negin" ? "/negin" : ""}/resale-off-plan`
-    : `${owner === "negin" ? "/negin" : ""}/areas`;
+    : `${owner === "negin" ? "/negin/listings" : "/listings"}`;
   const overviewBasePath = inventoryType === "resale-off-plan"
     ? resaleOffPlanPathFor(owner)
     : readyPropertiesPathFor(owner);

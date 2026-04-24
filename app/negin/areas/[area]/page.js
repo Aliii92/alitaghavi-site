@@ -1,19 +1,8 @@
-import AreaInventoryPage, {
-  buildAreaMetadata,
-  buildAreaStaticParams
-} from "../../../../components/AreaInventoryPage";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export async function generateStaticParams() {
-  return buildAreaStaticParams("ready");
-}
-
-export async function generateMetadata({ params }) {
+export default async function NeginAreaPage({ params }) {
   const { area } = await params;
-  return buildAreaMetadata(area, "negin", "ready");
-}
-
-export default function NeginAreaPage(props) {
-  return <AreaInventoryPage {...props} owner="negin" inventoryType="ready" />;
+  redirect(`/negin/listings/${area}`);
 }

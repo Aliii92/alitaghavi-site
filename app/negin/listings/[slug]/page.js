@@ -1,7 +1,7 @@
 import AreaInventoryPage, {
   buildAreaMetadata,
   buildAreaStaticParams
-} from "../../../components/AreaInventoryPage";
+} from "../../../../components/AreaInventoryPage";
 
 export const dynamic = "force-dynamic";
 
@@ -12,10 +12,10 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  return buildAreaMetadata(slug, "ali", "ready");
+  return buildAreaMetadata(slug, "negin", "ready");
 }
 
-export default async function ListingsSlugPage({ params }) {
+export default async function NeginListingsSlugPage({ params }) {
   const { slug } = await params;
-  return <AreaInventoryPage params={{ area: slug }} owner="ali" inventoryType="ready" />;
+  return <AreaInventoryPage params={{ area: slug }} owner="negin" inventoryType="ready" />;
 }
