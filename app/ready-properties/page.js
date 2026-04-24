@@ -1,3 +1,5 @@
+import PropertiesInventoryPage from "../../components/PropertiesInventoryPage";
+
 export const metadata = {
   title: "Ready Properties in Dubai",
   description:
@@ -7,4 +9,8 @@ export const metadata = {
   }
 };
 
-export { default, dynamic } from "../listings/page";
+export const dynamic = "force-dynamic";
+
+export default function ReadyPropertiesPage(props) {
+  return <PropertiesInventoryPage {...props} owner="ali" inventoryType="ready" />;
+}

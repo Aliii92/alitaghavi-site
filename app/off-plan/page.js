@@ -1,3 +1,5 @@
+import ProjectsInventoryPage from "../../components/ProjectsInventoryPage";
+
 export const metadata = {
   title: "Off-Plan Projects in Dubai",
   description:
@@ -7,4 +9,8 @@ export const metadata = {
   }
 };
 
-export { default, dynamic } from "../projects/page";
+export const dynamic = "force-dynamic";
+
+export default async function OffPlanPage({ searchParams }) {
+  return <ProjectsInventoryPage searchParams={searchParams} owner="ali" />;
+}
