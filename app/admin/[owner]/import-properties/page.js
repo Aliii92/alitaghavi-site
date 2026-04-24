@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 const advisorConfig = {
   ali: { label: "Ali Taghavi", storageKey: "ali_admin_password" },
@@ -12,6 +12,7 @@ const previewColumns = ["id", "title", "area", "building", "inventory_type", "pr
 
 export default function BulkImportPropertiesPage() {
   const { owner } = useParams();
+  const router = useRouter();
   const config = advisorConfig[owner] || advisorConfig.ali;
   const basePath = `/admin/${owner}`;
   const [password, setPassword] = useState("");
@@ -94,14 +95,29 @@ export default function BulkImportPropertiesPage() {
         },
         body: JSON.stringify({ rows: validRows })
       });
-      const data = await response.json();
+      const payloadText = await response.text();
+      let data = {};
 
-      if (!response.ok) throw new Error(data.error || "Import failed.");
+      try {
+        data = payloadText ? JSON.parse(payloadText) : {};
+      } catch {
+        data = {};
+      }
 
-      setMessage(`Import complete: ${data.imported} added, ${data.updated} updated, ${data.failed} failed.`);
+      if (!response.ok) {
+        throw new Error(data.error || payloadText || "Import failed.");
+      }
+
+      setMessage(`${data.imported || 0} properties imported successfully${data.updated ? `, ${data.updated} updated` : ""}.`);
       setPreview(null);
       setFile(null);
+      router.refresh();
+      window.setTimeout(() => {
+        router.push(basePath);
+        router.refresh();
+      }, 900);
     } catch (error) {
+      console.error("[admin-import-properties:commit]", error);
       setMessage(error.message || "Import failed.");
     } finally {
       setLoading(false);

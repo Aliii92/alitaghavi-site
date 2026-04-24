@@ -1,5 +1,6 @@
 import { inflateRawSync } from "zlib";
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { ownerFromRequest } from "../../../../lib/adminAuth";
 import {
   categoryLabelToValue,
@@ -58,6 +59,26 @@ const columnAliases = {
 
 function forbidden() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+
+function revalidateInventoryPaths(owner) {
+  const basePaths = owner === "negin"
+    ? [
+        "/negin",
+        "/negin/ready-properties",
+        "/negin/listings",
+        "/negin/resale-off-plan",
+        "/negin/off-plan"
+      ]
+    : [
+        "/",
+        "/ready-properties",
+        "/listings",
+        "/resale-off-plan",
+        "/off-plan-projects"
+      ];
+
+  basePaths.forEach((path) => revalidatePath(path));
 }
 
 function parseBoolean(value) {
@@ -592,32 +613,56 @@ export async function POST(request) {
   const existingProperties = await readProperties();
 
   if (mode === "commit") {
-    const payload = await request.json();
-    const validation = validateRows(payload.rows || [], existingProperties, adminOwner, updateExisting);
-    const validRows = validation.filter((item) => !item.errors.length).map((item) => item.property);
-    const nextProperties = [...existingProperties];
-    let imported = 0;
-    let updated = 0;
+    try {
+      const payload = await request.json();
+      const validation = validateRows(payload.rows || [], existingProperties, adminOwner, updateExisting);
+      const validRows = validation.filter((item) => !item.errors.length).map((item) => item.property);
+      const nextProperties = [...existingProperties];
+      let imported = 0;
+      let updated = 0;
 
-    validRows.forEach((property) => {
-      const index = nextProperties.findIndex((item) => item.id === property.id && normalizeProperty(item, item.id).owner === adminOwner);
-      if (index >= 0 && updateExisting) {
-        nextProperties[index] = property;
-        updated += 1;
-      } else if (index === -1) {
-        nextProperties.push(property);
-        imported += 1;
+      validRows.forEach((property) => {
+        const index = nextProperties.findIndex((item) => item.id === property.id && normalizeProperty(item, item.id).owner === adminOwner);
+        if (index >= 0 && updateExisting) {
+          nextProperties[index] = property;
+          updated += 1;
+        } else if (index === -1) {
+          nextProperties.push(property);
+          imported += 1;
+        }
+      });
+
+      if (!validRows.length) {
+        return NextResponse.json(
+          {
+            error: "There are no valid rows to import.",
+            failed: validation.filter((item) => item.errors.length).length,
+            errors: validation.filter((item) => item.errors.length)
+          },
+          { status: 400 }
+        );
       }
-    });
 
-    await writeProperties(nextProperties);
+      await writeProperties(nextProperties);
+      const savedProperties = await readProperties();
+      const savedCount = savedProperties.filter((property) => normalizeProperty(property, property.id).owner === adminOwner).length;
 
-    return NextResponse.json({
-      imported,
-      updated,
-      failed: validation.filter((item) => item.errors.length).length,
-      errors: validation.filter((item) => item.errors.length)
-    });
+      revalidateInventoryPaths(adminOwner);
+
+      return NextResponse.json({
+        imported,
+        updated,
+        failed: validation.filter((item) => item.errors.length).length,
+        errors: validation.filter((item) => item.errors.length),
+        savedCount
+      });
+    } catch (error) {
+      console.error("[property-import:commit]", error);
+      return NextResponse.json(
+        { error: error.message || "Import failed while saving properties." },
+        { status: 500 }
+      );
+    }
   }
 
   try {
@@ -639,6 +684,7 @@ export async function POST(request) {
       failed: validation.filter((item) => item.errors.length).length
     });
   } catch (error) {
+    console.error("[property-import:preview]", error);
     return NextResponse.json({ error: error.message || "Import preview failed." }, { status: 400 });
   }
 }
