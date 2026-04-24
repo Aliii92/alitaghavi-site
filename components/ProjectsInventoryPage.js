@@ -1,39 +1,57 @@
 import LeadWhatsAppButton from "./LeadWhatsAppButton";
 import AreaPropertyFilters from "./AreaPropertyFilters";
+import LanguageSwitcher from "./LanguageSwitcher";
 import { buildLeadPayload, buildPropertyWhatsAppUrl } from "../lib/whatsapp.js";
 import { offPlanProjectsPathFor, readyPropertiesPathFor, resaleOffPlanPathFor } from "../lib/public-context.js";
 import { readProperties } from "../lib/properties.js";
 import { projectToProperty, readProjects } from "../lib/projects.js";
 import { formatPriceDisplay } from "../lib/price.js";
+import { localizePath } from "../lib/locale";
+import { getRequestLocale } from "../lib/server-locale";
 
 const searchKeys = ["q", "category", "bedrooms", "property_type", "min_price", "max_price", "handover"];
 
-function NavBar({ owner = "ali" }) {
-  const readyHref = readyPropertiesPathFor(owner);
-  const projectsHref = offPlanProjectsPathFor(owner);
-  const resaleHref = resaleOffPlanPathFor(owner);
-  const homeHref = owner === "negin" ? "/negin" : "/";
+function NavBar({ owner = "ali", locale = "en" }) {
+  const readyHref = localizePath(readyPropertiesPathFor(owner), locale);
+  const projectsHref = localizePath(offPlanProjectsPathFor(owner), locale);
+  const resaleHref = localizePath(resaleOffPlanPathFor(owner), locale);
+  const homeHref = localizePath(owner === "negin" ? "/negin" : "/", locale);
+  const copy = locale === "fa"
+    ? {
+        brand: "املاک لوکس دبی",
+        ready: "املاک آماده",
+        projects: "پروژه‌های آف‌پلن",
+        resale: "ری‌سیل آف‌پلن",
+        areas: "مناطق برتر",
+        contact: "ارتباط",
+        about: "درباره من",
+        otherAdvisor: owner === "ali" ? "نگین محمدی" : "علی تقوی"
+      }
+    : {
+        brand: "Dubai Luxury Properties",
+        ready: "Ready Properties",
+        projects: "Off-Plan Projects",
+        resale: "Resale Off-Plan",
+        areas: "Prime Areas",
+        contact: "Contact",
+        about: "About Me",
+        otherAdvisor: owner === "ali" ? "Negin Mohamadi" : "Ali Taghavi"
+      };
 
   return (
     <div className="nav-shell">
       <nav className="topbar">
-        <a className="brand" href={homeHref}>
-          Dubai Luxury Properties
-        </a>
+        <a className="brand" href={homeHref}>{copy.brand}</a>
         <div className="nav-links">
-          <a href={readyHref}>Ready Properties</a>
-          <a href={projectsHref}>Off-Plan Projects</a>
-          <a href={resaleHref}>Resale Off-Plan</a>
-          <a href={`${homeHref}#areas`}>Prime Areas</a>
-          {owner === "ali" ? <a href="/negin">Negin Mohamadi</a> : null}
-          <a href={`${homeHref}#contact`}>Contact</a>
-          <a href={`${homeHref}#advisory`}>About Me</a>
+          <a href={readyHref}>{copy.ready}</a>
+          <a href={projectsHref}>{copy.projects}</a>
+          <a href={resaleHref}>{copy.resale}</a>
+          <a href={`${homeHref}#areas`}>{copy.areas}</a>
+          {owner === "ali" ? <a href={localizePath("/negin", locale)}>{copy.otherAdvisor}</a> : null}
+          <a href={`${homeHref}#contact`}>{copy.contact}</a>
+          <a href={`${homeHref}#advisory`}>{copy.about}</a>
         </div>
-        <div className="language-links">
-          <span className="lang-link active">EN</span>
-          <span className="lang-divider">|</span>
-          <span className="lang-link">FA</span>
-        </div>
+        <LanguageSwitcher locale={locale} />
       </nav>
     </div>
   );
@@ -87,6 +105,7 @@ function ProjectListingCard({ project, contextOwner = "ali" }) {
 }
 
 export default async function ProjectsInventoryPage({ searchParams, owner = "ali" }) {
+  const locale = await getRequestLocale();
   const params = await searchParams;
   const hasSearch = searchKeys.some((key) => params?.[key]);
   const projects = await readProjects();
@@ -98,18 +117,20 @@ export default async function ProjectsInventoryPage({ searchParams, owner = "ali
 
   return (
     <main className="luxury-page listings-page">
-      <NavBar owner={owner} />
+      <NavBar owner={owner} locale={locale} />
 
       <div className="content-shell listings-page-shell">
         <section className="section listings-intro-section">
           <div className="section-header centered listings-page-header">
-            <p className="section-eyebrow">Luxury Off-Plan Projects</p>
-            <h1>Explore More Off-Plan Projects</h1>
+            <p className="section-eyebrow">{locale === "fa" ? "پروژه‌های آف‌پلن لوکس" : "Luxury Off-Plan Projects"}</p>
+            <h1>{locale === "fa" ? "پروژه‌های آف‌پلن بیشتر را بررسی کنید" : "Explore More Off-Plan Projects"}</h1>
             <p className="section-text">
-              A curated selection of premium off-plan opportunities across Dubai's branded, waterfront, and high-growth locations.
+              {locale === "fa"
+                ? "منتخبی از فرصت‌های پریمیوم آف‌پلن در مناطق برندد، واترفرانت و رو به رشد دبی."
+                : "A curated selection of premium off-plan opportunities across Dubai's branded, waterfront, and high-growth locations."}
             </p>
             <a className="back-to-listings-link" href={homeHref}>
-              Back to homepage projects
+              {locale === "fa" ? "بازگشت به پروژه‌های صفحه اصلی" : "Back to homepage projects"}
             </a>
           </div>
         </section>
@@ -128,7 +149,8 @@ export default async function ProjectsInventoryPage({ searchParams, owner = "ali
             }}
             mode={hasSearch ? "results" : "redirect"}
             defaultCategory="off-plan"
-            intro="Search off-plan projects by area, developer, bedroom mix, budget, and handover date."
+            intro={locale === "fa" ? "پروژه‌های آف‌پلن را بر اساس منطقه، توسعه‌دهنده، تعداد خواب، بودجه و زمان تحویل جست‌وجو کنید." : "Search off-plan projects by area, developer, bedroom mix, budget, and handover date."}
+            locale={locale}
           />
 
           {!hasSearch && projects.length ? (
@@ -139,8 +161,8 @@ export default async function ProjectsInventoryPage({ searchParams, owner = "ali
             </div>
           ) : !hasSearch ? (
             <article className="contact-card empty-listings-card">
-              <h3>Curated off-plan opportunities coming soon</h3>
-              <p>New off-plan projects can be added from the admin dashboard and will appear here automatically.</p>
+              <h3>{locale === "fa" ? "فرصت‌های آف‌پلن منتخب به‌زودی اضافه می‌شوند" : "Curated off-plan opportunities coming soon"}</h3>
+              <p>{locale === "fa" ? "پروژه‌های آف‌پلن جدید از داشبورد ادمین اضافه می‌شوند و به‌صورت خودکار اینجا نمایش داده خواهند شد." : "New off-plan projects can be added from the admin dashboard and will appear here automatically."}</p>
             </article>
           ) : null}
         </section>

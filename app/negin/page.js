@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import AreaPropertyFilters from "../../components/AreaPropertyFilters";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 import LeadWhatsAppButton from "../../components/LeadWhatsAppButton";
+import { localizePath } from "../../lib/locale";
 import { buildLeadPayload, buildPropertyWhatsAppUrl } from "../../lib/whatsapp";
 import { formatPriceDisplay } from "../../lib/price";
 
@@ -447,9 +450,9 @@ function ProjectCard({ card }) {
   );
 }
 
-function AreaCard({ card }) {
+function AreaCard({ card, locale = "en" }) {
   return (
-    <a className="area-card" href={`/prime-areas/negin-${card.slug}`}>
+    <a className="area-card" href={localizePath(`/prime-areas/negin-${card.slug}`, locale)}>
       <div
         className={`area-image ${card.imageClass || ""}`}
         style={card.image_url ? { backgroundImage: `url("${card.image_url}")` } : undefined}
@@ -502,7 +505,8 @@ function localizeAreaCard(area, locale) {
 }
 
 export default function NeginPage() {
-  const [locale, setLocale] = useState("en");
+  const pathname = usePathname();
+  const [locale, setLocale] = useState(pathname?.startsWith("/fa") ? "fa" : "en");
   const [editableAreas, setEditableAreas] = useState([]);
   const t = content[locale];
   const areaImageMap = new Map(editableAreas.map((area) => [area.slug || area.id, area.image_url]));
@@ -532,6 +536,10 @@ export default function NeginPage() {
     area: "",
     message: ""
   });
+
+  useEffect(() => {
+    setLocale(pathname?.startsWith("/fa") ? "fa" : "en");
+  }, [pathname]);
 
   useEffect(() => {
     document.documentElement.lang = locale === "fa" ? "fa" : "en";
@@ -566,27 +574,19 @@ export default function NeginPage() {
     <main className={`luxury-page ${locale === "fa" ? "rtl" : ""}`}>
       <div className="nav-shell">
         <nav className="topbar">
-          <a className="brand" href="/negin">
+          <a className="brand" href={localizePath("/negin", locale)}>
             Negin Mohamadi
           </a>
           <div className="nav-links">
-            <a href="/negin/ready-properties">{t.nav.featured}</a>
-            <a href="/negin/off-plan">{t.nav.projects}</a>
-            <a href="/negin/resale-off-plan">{t.nav.resale}</a>
-            <a href="#areas">{t.nav.areas}</a>
-            <a href="/">{t.nav.ali || "Ali Taghavi"}</a>
-            <a href="#contact">{t.nav.contact}</a>
-            <a href="#advisory">{t.nav.advisory}</a>
+            <a href={localizePath("/negin/ready-properties", locale)}>{t.nav.featured}</a>
+            <a href={localizePath("/negin/off-plan", locale)}>{t.nav.projects}</a>
+            <a href={localizePath("/negin/resale-off-plan", locale)}>{t.nav.resale}</a>
+            <a href={localizePath("/negin#areas", locale)}>{t.nav.areas}</a>
+            <a href={localizePath("/", locale)}>{t.nav.ali || "Ali Taghavi"}</a>
+            <a href={localizePath("/negin#contact", locale)}>{t.nav.contact}</a>
+            <a href={localizePath("/negin#advisory", locale)}>{t.nav.advisory}</a>
           </div>
-          <div className="language-links">
-            <button type="button" className={`lang-link ${locale === "en" ? "active" : ""}`} onClick={() => setLocale("en")}>
-              EN
-            </button>
-            <span className="lang-divider">|</span>
-            <button type="button" className={`lang-link ${locale === "fa" ? "active" : ""}`} onClick={() => setLocale("fa")}>
-              FA
-            </button>
-          </div>
+          <LanguageSwitcher locale={locale} />
         </nav>
       </div>
 
@@ -604,7 +604,7 @@ export default function NeginPage() {
             <a className="button whatsapp-button" href={`https://wa.me/${neginWhatsappNumber}`} target="_blank" rel="noopener noreferrer">
               {t.hero.whatsapp}
             </a>
-            <a className="button ghost-button" href="#contact">
+            <a className="button ghost-button" href={localizePath("/negin#contact", locale)}>
               {t.hero.consultation}
             </a>
           </div>
@@ -626,12 +626,12 @@ export default function NeginPage() {
             phoneNumber={neginWhatsappNumber}
             owner="negin"
             sourcePage="Negin Mohamadi Page"
-            redirectBase="/negin/ready-properties"
+            redirectBase={localizePath("/negin/ready-properties", locale)}
             redirectBaseByCategory={{
-              all: "/negin/listings",
-              ready: "/negin/ready-properties",
-              "off-plan": "/negin/off-plan",
-              "resale-off-plan": "/negin/resale-off-plan"
+              all: localizePath("/negin/listings", locale),
+              ready: localizePath("/negin/ready-properties", locale),
+              "off-plan": localizePath("/negin/off-plan", locale),
+              "resale-off-plan": localizePath("/negin/resale-off-plan", locale)
             }}
             intro={locale === "fa" ? "فرصت‌های منتخب نگین را جستجو کنید و سپس فهرست کامل را ببینید." : "Search curated opportunities with Negin, then continue to her full listings page."}
             locale={locale}
@@ -660,7 +660,7 @@ export default function NeginPage() {
           <SectionHeader eyebrow={t.areas.eyebrow} title={t.areas.title} text={t.areas.text} />
           <div className="stack-grid">
             {primeAreaCards.map((area) => (
-              <AreaCard key={area.title} card={area} />
+              <AreaCard key={area.title} card={area} locale={locale} />
             ))}
           </div>
         </section>
@@ -693,7 +693,7 @@ export default function NeginPage() {
             <p className="section-eyebrow">{t.partnership.eyebrow}</p>
             <h2>{t.partnership.title}</h2>
             <p>{t.partnership.text}</p>
-            <a href="/">
+            <a href={localizePath("/", locale)}>
               {t.partnership.link}
             </a>
           </div>

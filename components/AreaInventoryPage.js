@@ -1,4 +1,5 @@
 import AreaPropertyFilters from "./AreaPropertyFilters";
+import LanguageSwitcher from "./LanguageSwitcher";
 import { readAreas } from "../lib/areas.js";
 import {
   isReadyProperty,
@@ -11,6 +12,8 @@ import {
   readyPropertiesPathFor,
   resaleOffPlanPathFor
 } from "../lib/public-context.js";
+import { localizePath } from "../lib/locale";
+import { getRequestLocale } from "../lib/server-locale";
 
 const visibleAreaSlugs = ["palm-jumeirah", "downtown", "bluewaters", "meydan"];
 const primaryAreaNames = new Set(["Palm Jumeirah", "Downtown", "Bluewaters", "Meydan"]);
@@ -44,23 +47,24 @@ function promotedAreaNames(properties) {
   );
 }
 
-function inventoryConfig(inventoryType) {
+function inventoryConfig(inventoryType, locale = "en") {
+  const isFa = locale === "fa";
   if (inventoryType === "resale-off-plan") {
     return {
-      eyebrow: "Resale Off-Plan",
-      heading: "Available Resale Off-Plan Units in",
-      otherAreasNote: "Curated resale off-plan opportunities across additional Dubai locations.",
-      emptyTitle: "Curated resale off-plan opportunities coming soon",
-      emptyBody: "New resale off-plan listings for this area can be added from the admin dashboard and will appear here automatically."
+      eyebrow: isFa ? "ری‌سیل آف‌پلن" : "Resale Off-Plan",
+      heading: isFa ? "واحدهای ری‌سیل آف‌پلن موجود در" : "Available Resale Off-Plan Units in",
+      otherAreasNote: isFa ? "فرصت‌های منتخب ری‌سیل آف‌پلن در سایر مناطق دبی." : "Curated resale off-plan opportunities across additional Dubai locations.",
+      emptyTitle: isFa ? "فرصت‌های ری‌سیل آف‌پلن منتخب به‌زودی اضافه می‌شوند" : "Curated resale off-plan opportunities coming soon",
+      emptyBody: isFa ? "لیستینگ‌های جدید ری‌سیل آف‌پلن از داشبورد ادمین اضافه می‌شوند و به‌صورت خودکار اینجا نمایش داده خواهند شد." : "New resale off-plan listings for this area can be added from the admin dashboard and will appear here automatically."
     };
   }
 
   return {
-    eyebrow: "Ready Properties",
-    heading: "Available Properties in",
-    otherAreasNote: "Curated ready properties across additional Dubai locations.",
-    emptyTitle: "Curated opportunities coming soon",
-    emptyBody: "New properties for this area can be added from the admin dashboard and will appear here automatically."
+    eyebrow: isFa ? "املاک آماده" : "Ready Properties",
+    heading: isFa ? "املاک موجود در" : "Available Properties in",
+    otherAreasNote: isFa ? "املاک آماده منتخب در سایر مناطق دبی." : "Curated ready properties across additional Dubai locations.",
+    emptyTitle: isFa ? "فرصت‌های منتخب به‌زودی اضافه می‌شوند" : "Curated opportunities coming soon",
+    emptyBody: isFa ? "املاک جدید برای این منطقه از داشبورد ادمین اضافه می‌شوند و به‌صورت خودکار اینجا نمایش داده خواهند شد." : "New properties for this area can be added from the admin dashboard and will appear here automatically."
   };
 }
 
@@ -94,29 +98,47 @@ function resolveSelectedArea(areaSlug, areas, properties = [], inventoryType = "
   };
 }
 
-function NavBar({ owner = "ali" }) {
-  const homeHref = owner === "negin" ? "/negin" : "/";
+function NavBar({ owner = "ali", locale = "en" }) {
+  const homeHref = localizePath(owner === "negin" ? "/negin" : "/", locale);
+  const readyHref = localizePath(readyPropertiesPathFor(owner), locale);
+  const offPlanHref = localizePath(offPlanProjectsPathFor(owner), locale);
+  const resaleHref = localizePath(resaleOffPlanPathFor(owner), locale);
+  const copy = locale === "fa"
+    ? {
+        brand: "املاک لوکس دبی",
+        ready: "املاک آماده",
+        projects: "پروژه‌های آف‌پلن",
+        resale: "ری‌سیل آف‌پلن",
+        areas: "مناطق برتر",
+        contact: "ارتباط",
+        about: "درباره من",
+        otherAdvisor: owner === "ali" ? "نگین محمدی" : "علی تقوی"
+      }
+    : {
+        brand: "Dubai Luxury Properties",
+        ready: "Ready Properties",
+        projects: "Off-Plan Projects",
+        resale: "Resale Off-Plan",
+        areas: "Prime Areas",
+        contact: "Contact",
+        about: "About Me",
+        otherAdvisor: owner === "ali" ? "Negin Mohamadi" : "Ali Taghavi"
+      };
 
   return (
     <div className="nav-shell">
       <nav className="topbar">
-        <a className="brand" href={homeHref}>
-          Dubai Luxury Properties
-        </a>
+        <a className="brand" href={homeHref}>{copy.brand}</a>
         <div className="nav-links">
-          <a href={readyPropertiesPathFor(owner)}>Ready Properties</a>
-          <a href={offPlanProjectsPathFor(owner)}>Off-Plan Projects</a>
-          <a href={resaleOffPlanPathFor(owner)}>Resale Off-Plan</a>
-          <a href={`${homeHref}#areas`}>Prime Areas</a>
-          {owner === "ali" ? <a href="/negin">Negin Mohamadi</a> : <a href="/">Ali Taghavi</a>}
-          <a href={`${homeHref}#contact`}>Contact</a>
-          <a href={`${homeHref}#advisory`}>About Me</a>
+          <a href={readyHref}>{copy.ready}</a>
+          <a href={offPlanHref}>{copy.projects}</a>
+          <a href={resaleHref}>{copy.resale}</a>
+          <a href={`${homeHref}#areas`}>{copy.areas}</a>
+          <a href={localizePath(owner === "ali" ? "/negin" : "/", locale)}>{copy.otherAdvisor}</a>
+          <a href={`${homeHref}#contact`}>{copy.contact}</a>
+          <a href={`${homeHref}#advisory`}>{copy.about}</a>
         </div>
-        <div className="language-links">
-          <span className="lang-link active">EN</span>
-          <span className="lang-divider">|</span>
-          <span className="lang-link">FA</span>
-        </div>
+        <LanguageSwitcher locale={locale} />
       </nav>
     </div>
   );
@@ -129,10 +151,11 @@ export async function buildAreaStaticParams(inventoryType = "ready") {
 }
 
 export async function buildAreaMetadata(areaSlug, owner = "ali", inventoryType = "ready") {
+  const locale = await getRequestLocale();
   const areas = (await readAreas()).filter((item) => item.owner === owner);
   const properties = filterPropertiesByInventory(await readProperties(), inventoryType);
   const selectedArea = resolveSelectedArea(areaSlug, areas, properties, inventoryType);
-  const sectionLabel = inventoryType === "resale-off-plan" ? "Resale Off-Plan" : "Ready Properties";
+  const sectionLabel = inventoryType === "resale-off-plan" ? (locale === "fa" ? "ری‌سیل آف‌پلن" : "Resale Off-Plan") : (locale === "fa" ? "املاک آماده" : "Ready Properties");
   const title = selectedArea ? `${selectedArea.name} ${sectionLabel}` : "Dubai Area Properties";
   const description = selectedArea?.note || `Browse curated ${sectionLabel.toLowerCase()} in Dubai's prime areas.`;
   const base = inventoryType === "resale-off-plan"
@@ -159,8 +182,9 @@ export async function buildAreaMetadata(areaSlug, owner = "ali", inventoryType =
 }
 
 export default async function AreaInventoryPage({ params, owner = "ali", inventoryType = "ready" }) {
+  const locale = await getRequestLocale();
   const { area } = await params;
-  const config = inventoryConfig(inventoryType);
+  const config = inventoryConfig(inventoryType, locale);
   const areas = (await readAreas()).filter((item) => item.owner === owner);
   const readyAndResaleProperties = await readProperties();
   const projectProperties = (await readProjects()).map(projectToProperty);
@@ -180,15 +204,15 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
   if (!selectedArea) {
     return (
       <main className="luxury-page listings-page">
-        <NavBar owner={owner} />
+        <NavBar owner={owner} locale={locale} />
         <div className="content-shell listings-page-shell">
           <section className="section listings-intro-section">
             <div className="section-header centered listings-page-header">
               <p className="section-eyebrow">{config.eyebrow}</p>
-              <h1>Area not found</h1>
-              <p className="section-text">Return to the area overview to browse available locations.</p>
+              <h1>{locale === "fa" ? "منطقه پیدا نشد" : "Area not found"}</h1>
+              <p className="section-text">{locale === "fa" ? "برای مرور لوکیشن‌های موجود به نمای کلی مناطق بازگردید." : "Return to the area overview to browse available locations."}</p>
               <a className="button secondary-button back-to-listings-button" href={overviewPath}>
-                Back to All Areas
+                {locale === "fa" ? "بازگشت به همه مناطق" : "Back to All Areas"}
               </a>
             </div>
           </section>
@@ -199,7 +223,7 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
 
   return (
     <main className="luxury-page listings-page">
-      <NavBar owner={owner} />
+      <NavBar owner={owner} locale={locale} />
 
       <div className="content-shell listings-page-shell">
         <section className="section listings-intro-section">
@@ -244,6 +268,7 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
               defaultCategory={inventoryType}
               groupByBuilding
               initialVisiblePerGroup={3}
+              locale={locale}
             />
           ) : (
             <article className="contact-card empty-listings-card">

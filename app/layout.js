@@ -1,5 +1,6 @@
 import "./globals.css";
 import UtmCapture from "../components/UtmCapture";
+import { getRequestLocale } from "../lib/server-locale";
 
 const siteUrl = "https://ali-taghavi.com";
 
@@ -48,7 +49,8 @@ export const metadata = {
   }
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const locale = await getRequestLocale();
   const schema = {
     "@context": "https://schema.org",
     "@type": "RealEstateAgent",
@@ -65,7 +67,7 @@ export default function RootLayout({ children }) {
   };
 
   return (
-    <html lang="en">
+    <html lang={locale} dir={locale === "fa" ? "rtl" : "ltr"}>
       <body suppressHydrationWarning>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
         <UtmCapture />

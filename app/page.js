@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import AreaPropertyFilters from "../components/AreaPropertyFilters";
+import LanguageSwitcher from "../components/LanguageSwitcher";
+import { localizePath } from "../lib/locale";
 
 const whatsappNumber = "971522950316";
 const instagramUrl = "https://instagram.com/";
@@ -549,9 +552,9 @@ function localizeProjectCard(project, locale) {
   };
 }
 
-function AreaCard({ card }) {
+function AreaCard({ card, locale = "en" }) {
   return (
-    <a className="area-card" href={`/prime-areas/${card.slug}`}>
+    <a className="area-card" href={localizePath(`/prime-areas/${card.slug}`, locale)}>
       <div
         className={`area-image ${card.imageClass || ""}`}
         style={card.image_url ? { backgroundImage: `url("${card.image_url}")` } : undefined}
@@ -631,7 +634,8 @@ function AdvisorySection({ data, consultationLabel, locale }) {
 }
 
 export default function HomePage() {
-  const [locale, setLocale] = useState("en");
+  const pathname = usePathname();
+  const [locale, setLocale] = useState(pathname?.startsWith("/fa") ? "fa" : "en");
   const [editableAreas, setEditableAreas] = useState([]);
   const [offPlanProjects, setOffPlanProjects] = useState([]);
   const [formData, setFormData] = useState({
@@ -648,6 +652,7 @@ export default function HomePage() {
   const areaImageMap = new Map(editableAreas.map((area) => [area.slug || area.id, area.image_url]));
   const featuredCards = t.featured.cards.map((card) => ({
     ...card,
+    href: localizePath(card.href || "/", locale),
     image_url: areaImageMap.get(card.slug),
     imageClass: card.slug ? "" : card.imageClass
   }));
@@ -669,6 +674,10 @@ export default function HomePage() {
         imageClass: card.slug ? "" : card.imageClass
       })).map((area) => localizeAreaCard(area, locale));
   const projectCards = offPlanProjects.map((project) => localizeProjectCard(project, locale));
+
+  useEffect(() => {
+    setLocale(pathname?.startsWith("/fa") ? "fa" : "en");
+  }, [pathname]);
 
   useEffect(() => {
     document.documentElement.lang = locale === "fa" ? "fa" : "en";
@@ -713,35 +722,19 @@ export default function HomePage() {
     <main className={`luxury-page ${locale === "fa" ? "rtl" : ""}`}>
       <div className="nav-shell">
         <nav className="topbar">
-          <a className="brand" href="#home">
+          <a className="brand" href={localizePath("/#home", locale)}>
             Ali Taghavi
           </a>
           <div className="nav-links">
-            <a href="/ready-properties">{t.nav.featured}</a>
-            <a href="/off-plan-projects">{t.nav.projects}</a>
-            <a href="/resale-off-plan">{t.nav.resale}</a>
-            <a href="#areas">{t.nav.areas}</a>
-            <a href="/negin">{t.nav.negin || "Negin Mohamadi"}</a>
-            <a href="#contact">{t.nav.contact}</a>
-            <a href="#advisory">{t.nav.advisory}</a>
+            <a href={localizePath("/ready-properties", locale)}>{t.nav.featured}</a>
+            <a href={localizePath("/off-plan-projects", locale)}>{t.nav.projects}</a>
+            <a href={localizePath("/resale-off-plan", locale)}>{t.nav.resale}</a>
+            <a href={localizePath("/#areas", locale)}>{t.nav.areas}</a>
+            <a href={localizePath("/negin", locale)}>{t.nav.negin || "Negin Mohamadi"}</a>
+            <a href={localizePath("/#contact", locale)}>{t.nav.contact}</a>
+            <a href={localizePath("/#advisory", locale)}>{t.nav.advisory}</a>
           </div>
-          <div className="language-links">
-            <button
-              type="button"
-              className={`lang-link ${locale === "en" ? "active" : ""}`}
-              onClick={() => setLocale("en")}
-            >
-              EN
-            </button>
-            <span className="lang-divider">|</span>
-            <button
-              type="button"
-              className={`lang-link ${locale === "fa" ? "active" : ""}`}
-              onClick={() => setLocale("fa")}
-            >
-              FA
-            </button>
-          </div>
+          <LanguageSwitcher locale={locale} />
         </nav>
       </div>
 
@@ -759,7 +752,7 @@ export default function HomePage() {
             <a className="button whatsapp-button" href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noopener noreferrer">
               {t.hero.whatsapp}
             </a>
-            <a className="button ghost-button" href="#contact">
+            <a className="button ghost-button" href={localizePath("/#contact", locale)}>
               {t.hero.consultation}
             </a>
           </div>
@@ -777,12 +770,12 @@ export default function HomePage() {
           <AreaPropertyFilters
             mode="redirect"
             areaName="Dubai"
-            redirectBase="/ready-properties"
+            redirectBase={localizePath("/ready-properties", locale)}
             redirectBaseByCategory={{
-              all: "/listings",
-              ready: "/ready-properties",
-              "off-plan": "/off-plan-projects",
-              "resale-off-plan": "/resale-off-plan"
+              all: localizePath("/listings", locale),
+              ready: localizePath("/ready-properties", locale),
+              "off-plan": localizePath("/off-plan-projects", locale),
+              "resale-off-plan": localizePath("/resale-off-plan", locale)
             }}
             intro={locale === "fa" ? "در میان فرصت‌های آماده و آف‌پلن منتخب جستجو کنید و سپس فهرست کامل را ببینید." : "Search across curated ready and off-plan opportunities, then continue to the full listings page."}
             locale={locale}
@@ -802,7 +795,7 @@ export default function HomePage() {
             ))}
           </div>
           <div className="more-options-row">
-            <a className="button secondary-button more-options-button" href="/ready-properties">
+            <a className="button secondary-button more-options-button" href={localizePath("/ready-properties", locale)}>
               {t.featured.moreOptions || (locale === "fa" ? "مشاهده فرصت‌های بیشتر ←" : "Explore More Opportunities →")}
             </a>
           </div>
@@ -821,7 +814,7 @@ export default function HomePage() {
             ))}
           </div>
           <div className="offplan-more-row">
-            <a className="offplan-more-button" href="/off-plan-projects">
+            <a className="offplan-more-button" href={localizePath("/off-plan-projects", locale)}>
               {t.projects.moreOptions}
             </a>
           </div>
@@ -831,7 +824,7 @@ export default function HomePage() {
           <SectionHeader eyebrow={t.areas.eyebrow} title={t.areas.title} text={t.areas.text} />
           <div className="stack-grid">
             {primeAreaCards.map((card) => (
-              <AreaCard key={card.title} card={card} />
+              <AreaCard key={card.title} card={card} locale={locale} />
             ))}
           </div>
         </section>
@@ -843,7 +836,7 @@ export default function HomePage() {
             <p className="section-eyebrow">{t.partnership.eyebrow}</p>
             <h2>{t.partnership.title}</h2>
             <p>{t.partnership.text}</p>
-            <a href="/negin">
+            <a href={localizePath("/negin", locale)}>
               {t.partnership.link}
             </a>
           </div>

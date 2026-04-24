@@ -1,4 +1,5 @@
 import AreaPropertyFilters from "./AreaPropertyFilters";
+import LanguageSwitcher from "./LanguageSwitcher";
 import { readAreas } from "../lib/areas.js";
 import {
   isReadyProperty,
@@ -11,6 +12,8 @@ import {
   readyPropertiesPathFor,
   resaleOffPlanPathFor
 } from "../lib/public-context.js";
+import { localizePath } from "../lib/locale";
+import { getRequestLocale } from "../lib/server-locale";
 
 const visibleAreaSlugs = ["palm-jumeirah", "downtown", "bluewaters", "meydan"];
 const primaryAreaOrder = ["Palm Jumeirah", "Downtown", "Bluewaters", "Meydan"];
@@ -88,29 +91,101 @@ function inventoryConfig(inventoryType) {
   };
 }
 
-function NavBar({ owner = "ali" }) {
-  const homeHref = owner === "negin" ? "/negin" : "/";
+function inventoryCopy(locale = "en", inventoryType = "ready") {
+  const isFa = locale === "fa";
+
+  if (inventoryType === "all") {
+    return {
+      eyebrow: isFa ? "جستجوی سراسری ملک" : "Global Property Search",
+      title: isFa ? "جستجوی ملک در تمام دسته‌بندی‌های دبی" : "Search Dubai Properties Across Categories",
+      subtitle: isFa
+        ? "میان املاک آماده، پروژه‌های آف‌پلن و فرصت‌های ری‌سیل آف‌پلن در یک تجربه جست‌وجوی یکپارچه جابه‌جا شوید."
+        : "Move smoothly between ready properties, off-plan projects, and resale off-plan opportunities from one shared search experience.",
+      intro: isFa
+        ? "در میان املاک آماده، آف‌پلن و ری‌سیل آف‌پلن بر اساس منطقه، ساختمان، نوع ملک، تعداد خواب و بودجه جست‌وجو کنید."
+        : "Search across ready, off-plan, and resale off-plan inventory by area, building, property type, bedrooms, and budget.",
+      cardDescription: isFa ? "فرصت‌های منتخب در سایر مناطق دبی." : "Curated opportunities across additional Dubai locations.",
+      cardButton: isFa ? "مشاهده املاک" : "View Properties",
+      category: "all"
+    };
+  }
+
+  if (inventoryType === "resale-off-plan") {
+    return {
+      eyebrow: isFa ? "ری‌سیل آف‌پلن" : "Resale Off-Plan",
+      title: isFa ? "جست‌وجوی ری‌سیل آف‌پلن بر اساس منطقه" : "Explore Resale Off-Plan by Area",
+      subtitle: isFa
+        ? "فرصت‌های منتخب ری‌سیل آف‌پلن را در مناطق و آدرس‌های شاخص دبی مرور کنید."
+        : "Browse curated resale off-plan opportunities across Dubai's most sought-after areas and branded addresses.",
+      intro: isFa
+        ? "فرصت‌های ری‌سیل آف‌پلن را بر اساس منطقه، ساختمان، نوع ملک، تعداد خواب و بودجه جست‌وجو کنید."
+        : "Search resale off-plan opportunities by area, building, property type, bedrooms, and budget.",
+      cardDescription: isFa ? "فرصت‌های منتخب ری‌سیل آف‌پلن در سایر مناطق دبی." : "Curated resale off-plan opportunities across additional Dubai locations.",
+      cardButton: isFa ? "مشاهده املاک" : "View Properties",
+      category: "resale-off-plan"
+    };
+  }
+
+  return {
+    eyebrow: isFa ? "املاک آماده" : "Shared Ready Properties",
+    title: isFa ? "جست‌وجوی املاک بر اساس منطقه" : "Explore Properties by Area",
+    subtitle: isFa
+      ? "فرصت‌های منتخب را بر اساس مهم‌ترین مناطق و آدرس‌های برندد دبی مرور کنید."
+      : "Browse curated opportunities organized by Dubai's most sought-after locations and branded addresses.",
+    intro: isFa
+      ? "املاک آماده را بر اساس منطقه، ساختمان، نوع ملک، تعداد خواب و بودجه جست‌وجو کنید."
+      : "Search ready properties by area, building, property type, bedrooms, and budget.",
+    cardDescription: isFa ? "املاک آماده منتخب در سایر مناطق دبی." : "Curated ready properties across additional Dubai locations.",
+    cardButton: isFa ? "مشاهده املاک" : "View Properties",
+    category: "ready"
+  };
+}
+
+function NavBar({ owner = "ali", locale = "en" }) {
+  const homeHref = localizePath(owner === "negin" ? "/negin" : "/", locale);
+  const readyHref = localizePath(readyPropertiesPathFor(owner), locale);
+  const offPlanHref = localizePath(offPlanProjectsPathFor(owner), locale);
+  const resaleHref = localizePath(resaleOffPlanPathFor(owner), locale);
+  const areasHref = `${homeHref}#areas`;
+  const contactHref = `${homeHref}#contact`;
+  const aboutHref = `${homeHref}#advisory`;
+  const switchHref = localizePath(owner === "ali" ? "/negin" : "/", locale);
+  const copy = locale === "fa"
+    ? {
+        brand: "املاک لوکس دبی",
+        ready: "املاک آماده",
+        offPlan: "پروژه‌های آف‌پلن",
+        resale: "ری‌سیل آف‌پلن",
+        areas: "مناطق برتر",
+        contact: "ارتباط",
+        about: "درباره من",
+        otherAdvisor: owner === "ali" ? "نگین محمدی" : "علی تقوی"
+      }
+    : {
+        brand: "Dubai Luxury Properties",
+        ready: "Ready Properties",
+        offPlan: "Off-Plan Projects",
+        resale: "Resale Off-Plan",
+        areas: "Prime Areas",
+        contact: "Contact",
+        about: "About Me",
+        otherAdvisor: owner === "ali" ? "Negin Mohamadi" : "Ali Taghavi"
+      };
 
   return (
     <div className="nav-shell">
       <nav className="topbar">
-        <a className="brand" href={homeHref}>
-          Dubai Luxury Properties
-        </a>
+        <a className="brand" href={homeHref}>{copy.brand}</a>
         <div className="nav-links">
-          <a href={readyPropertiesPathFor(owner)}>Ready Properties</a>
-          <a href={offPlanProjectsPathFor(owner)}>Off-Plan Projects</a>
-          <a href={resaleOffPlanPathFor(owner)}>Resale Off-Plan</a>
-          <a href={`${homeHref}#areas`}>Prime Areas</a>
-          {owner === "ali" ? <a href="/negin">Negin Mohamadi</a> : <a href="/">Ali Taghavi</a>}
-          <a href={`${homeHref}#contact`}>Contact</a>
-          <a href={`${homeHref}#advisory`}>About Me</a>
+          <a href={readyHref}>{copy.ready}</a>
+          <a href={offPlanHref}>{copy.offPlan}</a>
+          <a href={resaleHref}>{copy.resale}</a>
+          <a href={areasHref}>{copy.areas}</a>
+          <a href={switchHref}>{copy.otherAdvisor}</a>
+          <a href={contactHref}>{copy.contact}</a>
+          <a href={aboutHref}>{copy.about}</a>
         </div>
-        <div className="language-links">
-          <span className="lang-link active">EN</span>
-          <span className="lang-divider">|</span>
-          <span className="lang-link">FA</span>
-        </div>
+        <LanguageSwitcher locale={locale} />
       </nav>
     </div>
   );
@@ -123,9 +198,10 @@ function filterPropertiesByInventory(properties, inventoryType) {
 }
 
 export default async function PropertiesInventoryPage({ searchParams, owner = "ali", inventoryType = "ready" }) {
+  const locale = await getRequestLocale();
   const params = await searchParams;
   const hasSearch = searchKeys.some((key) => params?.[key]);
-  const config = inventoryConfig(inventoryType);
+  const config = inventoryCopy(locale, inventoryType);
   const areas = (await readAreas()).filter((area) => area.owner === owner);
   const baseProperties = await readProperties();
   const projectProperties = (await readProjects()).map(projectToProperty);
@@ -170,7 +246,7 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
 
   return (
     <main className="luxury-page listings-page">
-      <NavBar owner={owner} />
+      <NavBar owner={owner} locale={locale} />
 
       <div className="content-shell listings-page-shell">
         <section className="section listings-intro-section">
@@ -199,6 +275,7 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
             defaultCategory={config.category}
             showResults={hasSearch}
             intro={config.intro}
+            locale={locale}
           />
         </section>
 
@@ -213,7 +290,8 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
                   ></div>
                   <div className="listing-content">
                     <span className="listing-label">{group.items.length} Opportunities</span>
-                    <span className="listing-badge">Area / District</span>
+                    <span className="listing-label">{locale === "fa" ? `${group.items.length} فرصت` : `${group.items.length} Opportunities`}</span>
+                    <span className="listing-badge">{locale === "fa" ? "منطقه / ناحیه" : "Area / District"}</span>
                     <h3>{group.name}</h3>
                     <p className="listing-description">{group.note}</p>
                     <span className="button secondary-button area-overview-button">{config.cardButton}</span>
