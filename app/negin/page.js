@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import AreaPropertyFilters from "../../components/AreaPropertyFilters";
-import LanguageSwitcher from "../../components/LanguageSwitcher";
+import ResponsiveNavbar from "../../components/ResponsiveNavbar";
 import LeadWhatsAppButton from "../../components/LeadWhatsAppButton";
 import { localizePath } from "../../lib/locale";
 import { buildLeadPayload, buildPropertyWhatsAppUrl } from "../../lib/whatsapp";
@@ -536,6 +536,15 @@ export default function NeginPage() {
     area: "",
     message: ""
   });
+  const navLinks = [
+    { href: localizePath("/negin/ready-properties", locale), label: t.nav.featured },
+    { href: localizePath("/negin/off-plan", locale), label: t.nav.projects },
+    { href: localizePath("/negin/resale-off-plan", locale), label: t.nav.resale },
+    { href: localizePath("/negin#areas", locale), label: t.nav.areas },
+    { href: localizePath("/", locale), label: t.nav.ali || "Ali Taghavi" },
+    { href: localizePath("/negin#contact", locale), label: t.nav.contact },
+    { href: localizePath("/negin#advisory", locale), label: t.nav.advisory }
+  ];
 
   useEffect(() => {
     setLocale(pathname?.startsWith("/fa") ? "fa" : "en");
@@ -572,23 +581,12 @@ export default function NeginPage() {
 
   return (
     <main className={`luxury-page ${locale === "fa" ? "rtl" : ""}`}>
-      <div className="nav-shell">
-        <nav className="topbar">
-          <a className="brand" href={localizePath("/negin", locale)}>
-            Negin Mohamadi
-          </a>
-          <div className="nav-links">
-            <a href={localizePath("/negin/ready-properties", locale)}>{t.nav.featured}</a>
-            <a href={localizePath("/negin/off-plan", locale)}>{t.nav.projects}</a>
-            <a href={localizePath("/negin/resale-off-plan", locale)}>{t.nav.resale}</a>
-            <a href={localizePath("/negin#areas", locale)}>{t.nav.areas}</a>
-            <a href={localizePath("/", locale)}>{t.nav.ali || "Ali Taghavi"}</a>
-            <a href={localizePath("/negin#contact", locale)}>{t.nav.contact}</a>
-            <a href={localizePath("/negin#advisory", locale)}>{t.nav.advisory}</a>
-          </div>
-          <LanguageSwitcher locale={locale} />
-        </nav>
-      </div>
+      <ResponsiveNavbar
+        brandLabel="Negin Mohamadi"
+        brandHref={localizePath("/negin", locale)}
+        links={navLinks}
+        locale={locale}
+      />
 
       <section className="hero-section" id="home">
         <div className="hero-overlay"></div>

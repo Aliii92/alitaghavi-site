@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import AreaPropertyFilters from "../components/AreaPropertyFilters";
-import LanguageSwitcher from "../components/LanguageSwitcher";
+import ResponsiveNavbar from "../components/ResponsiveNavbar";
 import { localizePath } from "../lib/locale";
 
 const whatsappNumber = "971522950316";
@@ -674,6 +674,15 @@ export default function HomePage() {
         imageClass: card.slug ? "" : card.imageClass
       })).map((area) => localizeAreaCard(area, locale));
   const projectCards = offPlanProjects.map((project) => localizeProjectCard(project, locale));
+  const navLinks = [
+    { href: localizePath("/ready-properties", locale), label: t.nav.featured },
+    { href: localizePath("/off-plan-projects", locale), label: t.nav.projects },
+    { href: localizePath("/resale-off-plan", locale), label: t.nav.resale },
+    { href: localizePath("/#areas", locale), label: t.nav.areas },
+    { href: localizePath("/negin", locale), label: t.nav.negin || "Negin Mohamadi" },
+    { href: localizePath("/#contact", locale), label: t.nav.contact },
+    { href: localizePath("/#advisory", locale), label: t.nav.advisory }
+  ];
 
   useEffect(() => {
     setLocale(pathname?.startsWith("/fa") ? "fa" : "en");
@@ -720,23 +729,12 @@ export default function HomePage() {
 
   return (
     <main className={`luxury-page ${locale === "fa" ? "rtl" : ""}`}>
-      <div className="nav-shell">
-        <nav className="topbar">
-          <a className="brand" href={localizePath("/#home", locale)}>
-            Ali Taghavi
-          </a>
-          <div className="nav-links">
-            <a href={localizePath("/ready-properties", locale)}>{t.nav.featured}</a>
-            <a href={localizePath("/off-plan-projects", locale)}>{t.nav.projects}</a>
-            <a href={localizePath("/resale-off-plan", locale)}>{t.nav.resale}</a>
-            <a href={localizePath("/#areas", locale)}>{t.nav.areas}</a>
-            <a href={localizePath("/negin", locale)}>{t.nav.negin || "Negin Mohamadi"}</a>
-            <a href={localizePath("/#contact", locale)}>{t.nav.contact}</a>
-            <a href={localizePath("/#advisory", locale)}>{t.nav.advisory}</a>
-          </div>
-          <LanguageSwitcher locale={locale} />
-        </nav>
-      </div>
+      <ResponsiveNavbar
+        brandLabel="Ali Taghavi"
+        brandHref={localizePath("/#home", locale)}
+        links={navLinks}
+        locale={locale}
+      />
 
       <section className="hero-section" id="home">
         <div className="hero-overlay"></div>

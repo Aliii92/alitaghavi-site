@@ -1,38 +1,34 @@
 import AreaPropertyFilters from "../../../components/AreaPropertyFilters";
+import ResponsiveNavbar from "../../../components/ResponsiveNavbar";
 import { readAreas, sanitizeAreaHtml } from "../../../lib/areas.js";
 import { readProperties } from "../../../lib/properties";
+import { localizePath } from "../../../lib/locale";
+import { getRequestLocale } from "../../../lib/server-locale";
 
-function NavBar({ owner = "ali" }) {
-  const homeHref = owner === "negin" ? "/negin" : "/";
-  const readyHref = owner === "negin" ? "/negin/ready-properties" : "/ready-properties";
-  const offPlanHref = owner === "negin" ? "/negin/off-plan-projects" : "/off-plan-projects";
-  const resaleHref = owner === "negin" ? "/negin/resale-off-plan" : "/resale-off-plan";
+function NavBar({ owner = "ali", locale = "en" }) {
+  const homeHref = localizePath(owner === "negin" ? "/negin" : "/", locale);
+  const readyHref = localizePath(owner === "negin" ? "/negin/ready-properties" : "/ready-properties", locale);
+  const offPlanHref = localizePath(owner === "negin" ? "/negin/off-plan" : "/off-plan-projects", locale);
+  const resaleHref = localizePath(owner === "negin" ? "/negin/resale-off-plan" : "/resale-off-plan", locale);
   const areasHref = `${homeHref}#areas`;
   const contactHref = `${homeHref}#contact`;
   const aboutHref = `${homeHref}#advisory`;
 
   return (
-    <div className="nav-shell">
-      <nav className="topbar">
-        <a className="brand" href={homeHref}>
-          Dubai Luxury Properties
-        </a>
-        <div className="nav-links">
-          <a href={readyHref}>Ready Properties</a>
-          <a href={offPlanHref}>Off-Plan Projects</a>
-          <a href={resaleHref}>Resale Off-Plan</a>
-          <a href={areasHref}>Prime Areas</a>
-          <a href={owner === "negin" ? "/" : "/negin"}>{owner === "negin" ? "Ali Taghavi" : "Negin Mohamadi"}</a>
-          <a href={contactHref}>Contact</a>
-          <a href={aboutHref}>{owner === "negin" ? "About Negin" : "About Me"}</a>
-        </div>
-        <div className="language-links">
-          <span className="lang-link active">EN</span>
-          <span className="lang-divider">|</span>
-          <span className="lang-link">FA</span>
-        </div>
-      </nav>
-    </div>
+    <ResponsiveNavbar
+      brandLabel="Dubai Luxury Properties"
+      brandHref={homeHref}
+      links={[
+        { href: readyHref, label: "Ready Properties" },
+        { href: offPlanHref, label: "Off-Plan Projects" },
+        { href: resaleHref, label: "Resale Off-Plan" },
+        { href: areasHref, label: "Prime Areas" },
+        { href: localizePath(owner === "negin" ? "/" : "/negin", locale), label: owner === "negin" ? "Ali Taghavi" : "Negin Mohamadi" },
+        { href: contactHref, label: "Contact" },
+        { href: aboutHref, label: owner === "negin" ? "About Negin" : "About Me" }
+      ]}
+      locale={locale}
+    />
   );
 }
 
@@ -82,6 +78,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function PrimeAreaDetailPage({ params }) {
+  const locale = await getRequestLocale();
   const { slug } = await params;
   const owner = slug.startsWith("negin-") ? "negin" : "ali";
   const areaSlug = owner === "negin" ? slug.replace(/^negin-/, "") : slug;
@@ -92,7 +89,7 @@ export default async function PrimeAreaDetailPage({ params }) {
   if (!area) {
     return (
       <main className="luxury-page listings-page">
-        <NavBar />
+        <NavBar owner={owner} locale={locale} />
         <div className="content-shell listings-page-shell">
           <section className="section listings-intro-section">
             <div className="section-header centered listings-page-header">
@@ -118,7 +115,7 @@ export default async function PrimeAreaDetailPage({ params }) {
 
   return (
     <main className="luxury-page listings-page">
-      <NavBar owner={owner} />
+      <NavBar owner={owner} locale={locale} />
       <div className="content-shell listings-page-shell">
         <section className="section listings-intro-section">
           <div className="section-header centered listings-page-header">

@@ -514,12 +514,6 @@ export default function AreaPropertyFilters({
         <span>{redirectMode || !shouldShowResults ? intro : t.propertiesFound(filteredProperties.length)}</span>
       </div>
 
-      <div className="property-search-trust" aria-label="Advisory trust points">
-        {t.trust.map((item) => (
-          <span key={item}>{item}</span>
-        ))}
-      </div>
-
       {!redirectMode && shouldShowResults && (
         filteredProperties.length ? (
           groupByBuilding ? (

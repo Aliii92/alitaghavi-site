@@ -1,6 +1,6 @@
 import LeadWhatsAppButton from "./LeadWhatsAppButton";
 import AreaPropertyFilters from "./AreaPropertyFilters";
-import LanguageSwitcher from "./LanguageSwitcher";
+import ResponsiveNavbar from "./ResponsiveNavbar";
 import { buildLeadPayload, buildPropertyWhatsAppUrl } from "../lib/whatsapp.js";
 import { offPlanProjectsPathFor, readyPropertiesPathFor, resaleOffPlanPathFor } from "../lib/public-context.js";
 import { readProperties } from "../lib/properties.js";
@@ -39,21 +39,20 @@ function NavBar({ owner = "ali", locale = "en" }) {
       };
 
   return (
-    <div className="nav-shell">
-      <nav className="topbar">
-        <a className="brand" href={homeHref}>{copy.brand}</a>
-        <div className="nav-links">
-          <a href={readyHref}>{copy.ready}</a>
-          <a href={projectsHref}>{copy.projects}</a>
-          <a href={resaleHref}>{copy.resale}</a>
-          <a href={`${homeHref}#areas`}>{copy.areas}</a>
-          {owner === "ali" ? <a href={localizePath("/negin", locale)}>{copy.otherAdvisor}</a> : null}
-          <a href={`${homeHref}#contact`}>{copy.contact}</a>
-          <a href={`${homeHref}#advisory`}>{copy.about}</a>
-        </div>
-        <LanguageSwitcher locale={locale} />
-      </nav>
-    </div>
+    <ResponsiveNavbar
+      brandLabel={copy.brand}
+      brandHref={homeHref}
+      links={[
+        { href: readyHref, label: copy.ready },
+        { href: projectsHref, label: copy.projects },
+        { href: resaleHref, label: copy.resale },
+        { href: `${homeHref}#areas`, label: copy.areas },
+        ...(owner === "ali" ? [{ href: localizePath("/negin", locale), label: copy.otherAdvisor }] : []),
+        { href: `${homeHref}#contact`, label: copy.contact },
+        { href: `${homeHref}#advisory`, label: copy.about }
+      ]}
+      locale={locale}
+    />
   );
 }
 

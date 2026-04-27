@@ -1,5 +1,5 @@
 import AreaPropertyFilters from "./AreaPropertyFilters";
-import LanguageSwitcher from "./LanguageSwitcher";
+import ResponsiveNavbar from "./ResponsiveNavbar";
 import { readAreas } from "../lib/areas.js";
 import {
   isReadyProperty,
@@ -126,21 +126,20 @@ function NavBar({ owner = "ali", locale = "en" }) {
       };
 
   return (
-    <div className="nav-shell">
-      <nav className="topbar">
-        <a className="brand" href={homeHref}>{copy.brand}</a>
-        <div className="nav-links">
-          <a href={readyHref}>{copy.ready}</a>
-          <a href={offPlanHref}>{copy.projects}</a>
-          <a href={resaleHref}>{copy.resale}</a>
-          <a href={`${homeHref}#areas`}>{copy.areas}</a>
-          <a href={localizePath(owner === "ali" ? "/negin" : "/", locale)}>{copy.otherAdvisor}</a>
-          <a href={`${homeHref}#contact`}>{copy.contact}</a>
-          <a href={`${homeHref}#advisory`}>{copy.about}</a>
-        </div>
-        <LanguageSwitcher locale={locale} />
-      </nav>
-    </div>
+    <ResponsiveNavbar
+      brandLabel={copy.brand}
+      brandHref={homeHref}
+      links={[
+        { href: readyHref, label: copy.ready },
+        { href: offPlanHref, label: copy.projects },
+        { href: resaleHref, label: copy.resale },
+        { href: `${homeHref}#areas`, label: copy.areas },
+        { href: localizePath(owner === "ali" ? "/negin" : "/", locale), label: copy.otherAdvisor },
+        { href: `${homeHref}#contact`, label: copy.contact },
+        { href: `${homeHref}#advisory`, label: copy.about }
+      ]}
+      locale={locale}
+    />
   );
 }
 

@@ -1,5 +1,5 @@
 import AreaPropertyFilters from "./AreaPropertyFilters";
-import LanguageSwitcher from "./LanguageSwitcher";
+import ResponsiveNavbar from "./ResponsiveNavbar";
 import { readAreas } from "../lib/areas.js";
 import {
   isReadyProperty,
@@ -173,21 +173,20 @@ function NavBar({ owner = "ali", locale = "en" }) {
       };
 
   return (
-    <div className="nav-shell">
-      <nav className="topbar">
-        <a className="brand" href={homeHref}>{copy.brand}</a>
-        <div className="nav-links">
-          <a href={readyHref}>{copy.ready}</a>
-          <a href={offPlanHref}>{copy.offPlan}</a>
-          <a href={resaleHref}>{copy.resale}</a>
-          <a href={areasHref}>{copy.areas}</a>
-          <a href={switchHref}>{copy.otherAdvisor}</a>
-          <a href={contactHref}>{copy.contact}</a>
-          <a href={aboutHref}>{copy.about}</a>
-        </div>
-        <LanguageSwitcher locale={locale} />
-      </nav>
-    </div>
+    <ResponsiveNavbar
+      brandLabel={copy.brand}
+      brandHref={homeHref}
+      links={[
+        { href: readyHref, label: copy.ready },
+        { href: offPlanHref, label: copy.offPlan },
+        { href: resaleHref, label: copy.resale },
+        { href: areasHref, label: copy.areas },
+        { href: switchHref, label: copy.otherAdvisor },
+        { href: contactHref, label: copy.contact },
+        { href: aboutHref, label: copy.about }
+      ]}
+      locale={locale}
+    />
   );
 }
 
