@@ -5,7 +5,24 @@ import { normalizeProject, readProjects, upsertSingleProject } from "../../../li
 import { hasSupabaseServerConfig } from "../../../lib/supabase-server.js";
 
 function forbidden() {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+}
+
+function success(payload = {}, status = 200) {
+  return NextResponse.json({ success: true, ...payload }, { status });
+}
+
+function failure(error, status = 500) {
+  return NextResponse.json({ success: false, error }, { status });
+}
+
+function logAction(action, owner, payload = {}) {
+  console.log("[api/projects]", {
+    table: "off_plan_projects",
+    action,
+    owner,
+    payloadKeys: Object.keys(payload || {})
+  });
 }
 
 function revalidateProjectPaths(owner) {
@@ -28,10 +45,10 @@ export async function GET(request) {
   try {
     const projects = (await readProjects({ allowFallback: !adminMode })).map((project) => normalizeProject(project, project.id));
     const scopedProjects = owner ? projects.filter((project) => project.owner === owner) : projects;
-    return NextResponse.json(featuredOnly ? scopedProjects.filter((project) => project.featured) : scopedProjects);
+    return success({ items: featuredOnly ? scopedProjects.filter((project) => project.featured) : scopedProjects });
   } catch (error) {
     console.error("[api/projects:GET]", error);
-    return NextResponse.json({ error: error.message || "Could not fetch projects from Supabase." }, { status: 500 });
+    return failure(error.message || "Could not fetch projects from Supabase.", 500);
   }
 }
 
@@ -41,18 +58,16 @@ export async function POST(request) {
 
   try {
     if (!hasSupabaseServerConfig()) {
-      return NextResponse.json(
-        { error: "Supabase server configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY." },
-        { status: 500 }
-      );
+      return failure("Supabase server configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY.", 500);
     }
 
     const payload = await request.json();
     const projects = await readProjects({ allowFallback: false });
     const project = normalizeProject({ ...payload, owner: adminOwner }, payload.id || `${Date.now()}`);
+    logAction("create", adminOwner, payload);
 
     if (projects.some((item) => item.id === project.id)) {
-      return NextResponse.json({ error: "A project with this ID already exists" }, { status: 409 });
+      return failure("A project with this ID already exists", 409);
     }
 
     const savedProject = await upsertSingleProject(project);
@@ -65,9 +80,9 @@ export async function POST(request) {
 
     revalidateProjectPaths(adminOwner);
 
-    return NextResponse.json(savedProject, { status: 201 });
+    return success({ item: savedProject }, 201);
   } catch (error) {
     console.error("[api/projects:POST]", error);
-    return NextResponse.json({ error: error.message || "Could not save project to Supabase." }, { status: 500 });
+    return failure(error.message || "Could not save project to Supabase.", 500);
   }
 }

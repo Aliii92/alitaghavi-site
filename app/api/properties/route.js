@@ -5,7 +5,25 @@ import { deleteSingleProperty, normalizeProperty, readProperties, upsertSinglePr
 import { hasSupabaseServerConfig } from "../../../lib/supabase-server";
 
 function forbidden() {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+}
+
+function success(payload = {}, status = 200) {
+  return NextResponse.json({ success: true, ...payload }, { status });
+}
+
+function failure(error, status = 500) {
+  return NextResponse.json({ success: false, error }, { status });
+}
+
+function logAction(action, details = {}) {
+  console.log("[api/properties]", {
+    table: details.table || "properties",
+    action,
+    owner: details.owner || "",
+    inventoryType: details.inventoryType || "",
+    payloadKeys: details.payload ? Object.keys(details.payload) : []
+  });
 }
 
 function revalidatePropertyPaths(owner) {
@@ -35,10 +53,12 @@ export async function GET(request) {
     ).map((property) => normalizeProperty(property, property.id));
     const scopedProperties = owner ? properties.filter((property) => property.owner === owner) : properties;
 
-    return NextResponse.json(featuredOnly ? scopedProperties.filter((property) => property.featured) : scopedProperties);
+    return success({
+      items: featuredOnly ? scopedProperties.filter((property) => property.featured) : scopedProperties
+    });
   } catch (error) {
     console.error("[api/properties:GET]", error);
-    return NextResponse.json({ error: error.message || "Could not fetch properties from Supabase." }, { status: 500 });
+    return failure(error.message || "Could not fetch properties from Supabase.", 500);
   }
 }
 
@@ -48,18 +68,21 @@ export async function POST(request) {
 
   try {
     if (!hasSupabaseServerConfig()) {
-      return NextResponse.json(
-        { error: "Supabase server configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY." },
-        { status: 500 }
-      );
+      return failure("Supabase server configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY.", 500);
     }
 
     const payload = await request.json();
     const properties = await readProperties({ allowFallback: false });
     const property = normalizeProperty({ ...payload, owner: adminOwner }, `${payload.id || Date.now()}`);
+    logAction("create", {
+      owner: adminOwner,
+      inventoryType: property.category,
+      table: property.category === "resale-off-plan" ? "resale_off_plan" : "properties",
+      payload
+    });
 
     if (properties.some((item) => item.id === property.id)) {
-      return NextResponse.json({ error: "A property with this ID already exists" }, { status: 409 });
+      return failure("A property with this ID already exists", 409);
     }
 
     const savedProperty = await upsertSingleProperty(property);
@@ -72,10 +95,10 @@ export async function POST(request) {
 
     revalidatePropertyPaths(adminOwner);
 
-    return NextResponse.json(savedProperty, { status: 201 });
+    return success({ item: savedProperty }, 201);
   } catch (error) {
     console.error("[api/properties:POST]", error);
-    return NextResponse.json({ error: error.message || "Could not save property to Supabase." }, { status: 500 });
+    return failure(error.message || "Could not save property to Supabase.", 500);
   }
 }
 
@@ -85,18 +108,21 @@ export async function PUT(request) {
 
   try {
     if (!hasSupabaseServerConfig()) {
-      return NextResponse.json(
-        { error: "Supabase server configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY." },
-        { status: 500 }
-      );
+      return failure("Supabase server configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY.", 500);
     }
 
     const payload = await request.json();
     const properties = await readProperties({ allowFallback: false });
     const index = properties.findIndex((property) => property.id === payload.id && normalizeProperty(property, property.id).owner === adminOwner);
+    logAction("update", {
+      owner: adminOwner,
+      inventoryType: payload.inventory_type || payload.category || "",
+      table: payload.category === "resale-off-plan" || payload.inventory_type === "Resale Off-Plan" ? "resale_off_plan" : "properties",
+      payload
+    });
 
     if (index === -1) {
-      return NextResponse.json({ error: "Property not found" }, { status: 404 });
+      return failure("Property not found", 404);
     }
 
     const nextProperty = normalizeProperty({ ...properties[index], ...payload, owner: adminOwner }, properties[index].id);
@@ -110,10 +136,10 @@ export async function PUT(request) {
 
     revalidatePropertyPaths(adminOwner);
 
-    return NextResponse.json(savedProperty);
+    return success({ item: savedProperty });
   } catch (error) {
     console.error("[api/properties:PUT]", error);
-    return NextResponse.json({ error: error.message || "Could not update property in Supabase." }, { status: 500 });
+    return failure(error.message || "Could not update property in Supabase.", 500);
   }
 }
 
@@ -125,15 +151,12 @@ export async function DELETE(request) {
   const id = searchParams.get("id");
 
   if (!id) {
-    return NextResponse.json({ error: "Missing property id" }, { status: 400 });
+    return failure("Missing property id", 400);
   }
 
   try {
     if (!hasSupabaseServerConfig()) {
-      return NextResponse.json(
-        { error: "Supabase server configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY." },
-        { status: 500 }
-      );
+      return failure("Supabase server configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY.", 500);
     }
 
     const properties = await readProperties({ allowFallback: false });
@@ -142,15 +165,21 @@ export async function DELETE(request) {
     );
 
     if (!existingProperty) {
-      return NextResponse.json({ error: "Property not found" }, { status: 404 });
+      return failure("Property not found", 404);
     }
 
+    logAction("delete", {
+      owner: adminOwner,
+      inventoryType: existingProperty.category,
+      table: existingProperty.category === "resale-off-plan" ? "resale_off_plan" : "properties",
+      payload: { id }
+    });
     await deleteSingleProperty(id, existingProperty);
     revalidatePropertyPaths(adminOwner);
 
-    return NextResponse.json({ ok: true });
+    return success({ item: { id } });
   } catch (error) {
     console.error("[api/properties:DELETE]", error);
-    return NextResponse.json({ error: error.message || "Could not delete property from Supabase." }, { status: 500 });
+    return failure(error.message || "Could not delete property from Supabase.", 500);
   }
 }

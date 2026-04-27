@@ -631,6 +631,12 @@ function localizeAreaCard(area, locale) {
   };
 }
 
+function extractApiItems(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.items)) return data.items;
+  return [];
+}
+
 export default function NeginPage() {
   const pathname = usePathname();
   const [locale, setLocale] = useState(pathname?.startsWith("/fa") ? "fa" : "en");
@@ -681,7 +687,7 @@ export default function NeginPage() {
   useEffect(() => {
     fetch("/api/areas?owner=negin")
       .then((response) => response.json())
-      .then((areas) => setEditableAreas(Array.isArray(areas) ? areas : []))
+      .then((areas) => setEditableAreas(extractApiItems(areas)))
       .catch(() => setEditableAreas([]));
   }, []);
 

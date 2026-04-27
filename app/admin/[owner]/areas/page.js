@@ -72,6 +72,16 @@ async function parseApiResponse(response) {
   return data;
 }
 
+function extractItems(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.items)) return data.items;
+  return [];
+}
+
+function extractImageUrl(data) {
+  return data?.image_url || data?.item?.image_url || "";
+}
+
 export default function AdminAreasPage() {
   const { owner } = useParams();
   const config = advisorConfig[owner] || advisorConfig.ali;
@@ -109,7 +119,7 @@ export default function AdminAreasPage() {
       });
       const data = await parseApiResponse(response);
 
-      setAreas(Array.isArray(data) ? data : []);
+      setAreas(extractItems(data));
       return true;
     } catch (error) {
       console.error("[admin-areas:loadAreas]", error);
@@ -361,7 +371,7 @@ export default function AdminAreasPage() {
       body: uploadData
     });
     const data = await parseApiResponse(response);
-    return data.image_url;
+    return extractImageUrl(data);
   }
 
   async function saveArea(event) {

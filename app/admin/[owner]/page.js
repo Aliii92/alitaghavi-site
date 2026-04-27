@@ -62,6 +62,16 @@ async function parseApiResponse(response) {
   return data;
 }
 
+function extractItems(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.items)) return data.items;
+  return [];
+}
+
+function extractImageUrl(data) {
+  return data?.image_url || data?.item?.image_url || "";
+}
+
 export default function ScopedAdminPage() {
   const { owner } = useParams();
   const pathname = usePathname();
@@ -202,7 +212,7 @@ export default function ScopedAdminPage() {
       });
       const data = await parseApiResponse(response);
 
-      setProperties(Array.isArray(data) ? data : []);
+      setProperties(extractItems(data));
       return true;
     } catch (error) {
       setMessage(error.message || "Could not load properties.");
@@ -299,7 +309,7 @@ export default function ScopedAdminPage() {
       body: uploadData
     });
     const data = await parseApiResponse(response);
-    return data.image_url;
+    return extractImageUrl(data);
   }
 
   async function saveProperty(event) {

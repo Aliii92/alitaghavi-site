@@ -5,7 +5,15 @@ import { deleteSingleProject, normalizeProject, readProjects, upsertSingleProjec
 import { hasSupabaseServerConfig } from "../../../../lib/supabase-server.js";
 
 function forbidden() {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+}
+
+function success(payload = {}, status = 200) {
+  return NextResponse.json({ success: true, ...payload }, { status });
+}
+
+function failure(error, status = 500) {
+  return NextResponse.json({ success: false, error }, { status });
 }
 
 function revalidateProjectPaths(owner) {
@@ -21,19 +29,23 @@ export async function PUT(request, { params }) {
 
   try {
     if (!hasSupabaseServerConfig()) {
-      return NextResponse.json(
-        { error: "Supabase server configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY." },
-        { status: 500 }
-      );
+      return failure("Supabase server configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY.", 500);
     }
 
     const { id } = await params;
     const payload = await request.json();
     const projects = await readProjects({ allowFallback: false });
     const existing = projects.find((project) => project.id === id && normalizeProject(project, project.id).owner === adminOwner);
+    console.log("[api/projects/[id]]", {
+      table: "off_plan_projects",
+      action: "update",
+      owner: adminOwner,
+      id,
+      payloadKeys: Object.keys(payload || {})
+    });
 
     if (!existing) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+      return failure("Project not found", 404);
     }
 
     const savedProject = await upsertSingleProject(
@@ -48,10 +60,10 @@ export async function PUT(request, { params }) {
 
     revalidateProjectPaths(adminOwner);
 
-    return NextResponse.json(savedProject);
+    return success({ item: savedProject });
   } catch (error) {
     console.error("[api/projects/[id]:PUT]", error);
-    return NextResponse.json({ error: error.message || "Could not update project in Supabase." }, { status: 500 });
+    return failure(error.message || "Could not update project in Supabase.", 500);
   }
 }
 
@@ -61,10 +73,7 @@ export async function DELETE(_request, { params }) {
 
   try {
     if (!hasSupabaseServerConfig()) {
-      return NextResponse.json(
-        { error: "Supabase server configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY." },
-        { status: 500 }
-      );
+      return failure("Supabase server configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY.", 500);
     }
 
     const { id } = await params;
@@ -74,15 +83,21 @@ export async function DELETE(_request, { params }) {
     );
 
     if (!existing) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+      return failure("Project not found", 404);
     }
 
+    console.log("[api/projects/[id]]", {
+      table: "off_plan_projects",
+      action: "delete",
+      owner: adminOwner,
+      id
+    });
     await deleteSingleProject(id);
     revalidateProjectPaths(adminOwner);
 
-    return NextResponse.json({ ok: true });
+    return success({ item: { id } });
   } catch (error) {
     console.error("[api/projects/[id]:DELETE]", error);
-    return NextResponse.json({ error: error.message || "Could not delete project from Supabase." }, { status: 500 });
+    return failure(error.message || "Could not delete project from Supabase.", 500);
   }
 }

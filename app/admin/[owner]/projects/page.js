@@ -66,6 +66,16 @@ async function parseApiResponse(response) {
   return data;
 }
 
+function extractItems(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.items)) return data.items;
+  return [];
+}
+
+function extractImageUrl(data) {
+  return data?.image_url || data?.item?.image_url || "";
+}
+
 export default function ScopedProjectsPage() {
   const { owner } = useParams();
   const config = advisorConfig[owner] || advisorConfig.ali;
@@ -100,7 +110,7 @@ export default function ScopedProjectsPage() {
       });
       const data = await parseApiResponse(response);
 
-      setProjects(Array.isArray(data) ? data : []);
+      setProjects(extractItems(data));
       return true;
     } catch (error) {
       console.error("[admin-projects:loadProjects]", error);
@@ -168,7 +178,7 @@ export default function ScopedProjectsPage() {
       body: uploadData
     });
     const data = await parseApiResponse(response);
-    return data.image_url;
+    return extractImageUrl(data);
   }
 
   async function saveProject(event) {

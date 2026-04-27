@@ -558,6 +558,12 @@ function localizeProjectCard(project, locale) {
   };
 }
 
+function extractApiItems(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.items)) return data.items;
+  return [];
+}
+
 function AreaCard({ card, locale = "en" }) {
   const imageSrc = getImageSrc(card, "");
   return (
@@ -805,14 +811,14 @@ export default function HomePage() {
   useEffect(() => {
     fetch("/api/areas?owner=ali")
       .then((response) => response.json())
-      .then((areas) => setEditableAreas(Array.isArray(areas) ? areas : []))
+      .then((areas) => setEditableAreas(extractApiItems(areas)))
       .catch(() => setEditableAreas([]));
   }, []);
 
   useEffect(() => {
     fetch("/api/projects?featured=true&owner=ali")
       .then((response) => response.json())
-      .then((projects) => setOffPlanProjects(Array.isArray(projects) ? projects : []))
+      .then((projects) => setOffPlanProjects(extractApiItems(projects)))
       .catch(() => setOffPlanProjects([]));
   }, []);
 
