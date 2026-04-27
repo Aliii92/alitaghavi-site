@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { normalizeArea, readAreas, writeAreas } from "../../../lib/areas.js";
+import { deleteSingleArea, normalizeArea, readAreas, upsertSingleArea } from "../../../lib/areas.js";
 import { normalizeOwner, ownerFromRequest } from "../../../lib/adminAuth.js";
+import { hasSupabaseServerConfig } from "../../../lib/supabase-server.js";
 
 function forbidden() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -22,63 +23,118 @@ export async function GET(request) {
 
   if (adminMode && !adminOwner) return forbidden();
 
-  const owner = adminMode ? adminOwner : requestedOwner ? normalizeOwner(requestedOwner) : "";
-  const areas = await readAreas();
-  return NextResponse.json(owner ? areas.filter((area) => area.owner === owner) : areas);
+  try {
+    const owner = adminMode ? adminOwner : requestedOwner ? normalizeOwner(requestedOwner) : "";
+    const areas = await readAreas({ allowFallback: !adminMode });
+    return NextResponse.json(owner ? areas.filter((area) => area.owner === owner) : areas);
+  } catch (error) {
+    console.error("[api/areas:GET]", error);
+    return NextResponse.json({ error: error.message || "Could not fetch areas from Supabase." }, { status: 500 });
+  }
 }
 
 export async function POST(request) {
   const adminOwner = ownerFromRequest(request);
   if (!adminOwner) return forbidden();
 
-  const payload = normalizeArea({ ...(await request.json()), owner: adminOwner }, adminOwner);
-  const areas = await readAreas();
+  try {
+    if (!hasSupabaseServerConfig()) {
+      return NextResponse.json(
+        { error: "Supabase server configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY." },
+        { status: 500 }
+      );
+    }
 
-  if (areas.some((area) => area.owner === adminOwner && (area.id === payload.id || area.slug === payload.slug))) {
-    return NextResponse.json({ error: "Area with this ID or slug already exists" }, { status: 409 });
+    const payload = normalizeArea({ ...(await request.json()), owner: adminOwner }, adminOwner);
+    const areas = await readAreas({ allowFallback: false });
+
+    if (areas.some((area) => area.owner === adminOwner && (area.id === payload.id || area.slug === payload.slug))) {
+      return NextResponse.json({ error: "Area with this ID or slug already exists" }, { status: 409 });
+    }
+
+    const savedArea = await upsertSingleArea(payload, adminOwner);
+    const verifiedAreas = await readAreas({ allowFallback: false });
+    const verifiedArea = verifiedAreas.find((area) => area.owner === adminOwner && area.id === payload.id);
+
+    if (!verifiedArea) {
+      throw new Error(`Supabase verification failed: area ${payload.id} is not available after insert.`);
+    }
+
+    revalidateAreaPaths(adminOwner, payload.slug);
+
+    return NextResponse.json(savedArea);
+  } catch (error) {
+    console.error("[api/areas:POST]", error);
+    return NextResponse.json({ error: error.message || "Could not save area to Supabase." }, { status: 500 });
   }
-
-  areas.push(payload);
-  await writeAreas(areas);
-  revalidateAreaPaths(adminOwner, payload.slug);
-
-  return NextResponse.json(payload);
 }
 
 export async function PUT(request) {
   const adminOwner = ownerFromRequest(request);
   if (!adminOwner) return forbidden();
 
-  const payload = normalizeArea({ ...(await request.json()), owner: adminOwner }, adminOwner);
-  const areas = await readAreas();
-  const index = areas.findIndex((area) => area.owner === adminOwner && (area.id === payload.id || area.slug === payload.slug));
+  try {
+    if (!hasSupabaseServerConfig()) {
+      return NextResponse.json(
+        { error: "Supabase server configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY." },
+        { status: 500 }
+      );
+    }
 
-  if (index === -1) {
-    return NextResponse.json({ error: "Area not found" }, { status: 404 });
+    const payload = normalizeArea({ ...(await request.json()), owner: adminOwner }, adminOwner);
+    const areas = await readAreas({ allowFallback: false });
+    const existing = areas.find((area) => area.owner === adminOwner && (area.id === payload.id || area.slug === payload.slug));
+
+    if (!existing) {
+      return NextResponse.json({ error: "Area not found" }, { status: 404 });
+    }
+
+    const savedArea = await upsertSingleArea(
+      normalizeArea({ ...existing, ...payload, owner: adminOwner }, adminOwner),
+      adminOwner
+    );
+    const verifiedAreas = await readAreas({ allowFallback: false });
+    const verifiedArea = verifiedAreas.find((area) => area.owner === adminOwner && area.id === savedArea.id);
+
+    if (!verifiedArea) {
+      throw new Error(`Supabase verification failed: area ${savedArea.id} is not available after update.`);
+    }
+
+    revalidateAreaPaths(adminOwner, savedArea.slug);
+
+    return NextResponse.json(savedArea);
+  } catch (error) {
+    console.error("[api/areas:PUT]", error);
+    return NextResponse.json({ error: error.message || "Could not update area in Supabase." }, { status: 500 });
   }
-
-  areas[index] = normalizeArea({ ...areas[index], ...payload, owner: adminOwner }, adminOwner);
-  await writeAreas(areas);
-  revalidateAreaPaths(adminOwner, areas[index].slug);
-
-  return NextResponse.json(areas[index]);
 }
 
 export async function DELETE(request) {
   const adminOwner = ownerFromRequest(request);
   if (!adminOwner) return forbidden();
 
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-  const areas = await readAreas();
-  const removedArea = areas.find((area) => area.owner === adminOwner && (area.id === id || area.slug === id));
-  const nextAreas = areas.filter((area) => !(area.owner === adminOwner && (area.id === id || area.slug === id)));
+  try {
+    if (!hasSupabaseServerConfig()) {
+      return NextResponse.json(
+        { error: "Supabase server configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY." },
+        { status: 500 }
+      );
+    }
 
-  if (nextAreas.length === areas.length) {
-    return NextResponse.json({ error: "Area not found" }, { status: 404 });
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    const areas = await readAreas({ allowFallback: false });
+    const removedArea = areas.find((area) => area.owner === adminOwner && (area.id === id || area.slug === id));
+
+    if (!removedArea) {
+      return NextResponse.json({ error: "Area not found" }, { status: 404 });
+    }
+
+    await deleteSingleArea(removedArea.id);
+    revalidateAreaPaths(adminOwner, removedArea.slug || id);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("[api/areas:DELETE]", error);
+    return NextResponse.json({ error: error.message || "Could not delete area from Supabase." }, { status: 500 });
   }
-
-  await writeAreas(nextAreas);
-  revalidateAreaPaths(adminOwner, removedArea?.slug || id);
-  return NextResponse.json({ ok: true });
 }

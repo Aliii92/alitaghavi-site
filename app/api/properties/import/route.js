@@ -9,6 +9,7 @@ import {
   readProperties,
   writeProperties
 } from "../../../../lib/properties";
+import { hasSupabaseServerConfig } from "../../../../lib/supabase-server";
 
 const fields = [
   "id",
@@ -605,12 +606,18 @@ export async function GET(request) {
 export async function POST(request) {
   const adminOwner = ownerFromRequest(request);
   if (!adminOwner) return forbidden();
+  if (!hasSupabaseServerConfig()) {
+    return NextResponse.json(
+      { error: "Supabase server configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY." },
+      { status: 500 }
+    );
+  }
 
   const { searchParams } = new URL(request.url);
   const mode = searchParams.get("mode") || "preview";
   const updateExisting = searchParams.get("updateExisting") === "true";
   const debug = searchParams.get("debug") === "1" || searchParams.get("debugImport") === "1";
-  const existingProperties = await readProperties();
+  const existingProperties = await readProperties({ allowFallback: false });
 
   if (mode === "commit") {
     try {
@@ -644,7 +651,7 @@ export async function POST(request) {
       }
 
       await writeProperties(nextProperties);
-      const savedProperties = await readProperties();
+      const savedProperties = await readProperties({ allowFallback: false });
       const savedCount = savedProperties.filter((property) => normalizeProperty(property, property.id).owner === adminOwner).length;
 
       revalidateInventoryPaths(adminOwner);
