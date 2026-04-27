@@ -41,6 +41,27 @@ function groupName(value, fallback) {
   return String(value || "").trim() || fallback;
 }
 
+async function parseApiResponse(response) {
+  const raw = await response.text();
+  let data = null;
+
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const message =
+      data?.error ||
+      raw ||
+      (response.status === 401 ? "Invalid password." : `Request failed with status ${response.status}.`);
+    throw new Error(message);
+  }
+
+  return data;
+}
+
 export default function ScopedAdminPage() {
   const { owner } = useParams();
   const pathname = usePathname();
@@ -179,11 +200,7 @@ export default function ScopedAdminPage() {
       const response = await fetch(`/api/properties?admin=true&inventoryType=${encodeURIComponent(inventoryScope)}`, {
         headers: authPassword ? { "x-admin-password": authPassword } : {}
       });
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || (response.status === 401 ? "Invalid password." : "Could not load properties."));
-      }
+      const data = await parseApiResponse(response);
 
       setProperties(Array.isArray(data) ? data : []);
       return true;
@@ -281,9 +298,7 @@ export default function ScopedAdminPage() {
       headers: { "x-admin-password": storedPassword },
       body: uploadData
     });
-    const data = await response.json();
-
-    if (!response.ok) throw new Error(data.error || "Image upload failed.");
+    const data = await parseApiResponse(response);
     return data.image_url;
   }
 
@@ -302,11 +317,7 @@ export default function ScopedAdminPage() {
         },
         body: JSON.stringify({ ...form, image_url: imageUrl })
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Save failed.");
-      }
+      await parseApiResponse(response);
 
       await loadProperties();
       setEditing(null);
@@ -332,11 +343,7 @@ export default function ScopedAdminPage() {
         method: "DELETE",
         headers: { "x-admin-password": storedPassword }
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Delete failed.");
-      }
+      await parseApiResponse(response);
 
       await loadProperties();
       setMessage("Property deleted.");

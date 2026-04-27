@@ -45,6 +45,27 @@ function textToFeatures(value) {
     .filter(Boolean);
 }
 
+async function parseApiResponse(response) {
+  const raw = await response.text();
+  let data = null;
+
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const message =
+      data?.error ||
+      raw ||
+      (response.status === 401 ? "Invalid password." : `Request failed with status ${response.status}.`);
+    throw new Error(message);
+  }
+
+  return data;
+}
+
 export default function ScopedProjectsPage() {
   const { owner } = useParams();
   const config = advisorConfig[owner] || advisorConfig.ali;
@@ -77,14 +98,13 @@ export default function ScopedProjectsPage() {
       const response = await fetch("/api/projects?admin=true", {
         headers: authPassword ? { "x-admin-password": authPassword } : {}
       });
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.error || "Unauthorized");
+      const data = await parseApiResponse(response);
 
       setProjects(Array.isArray(data) ? data : []);
       return true;
-    } catch {
-      setMessage("Invalid password or could not load projects.");
+    } catch (error) {
+      console.error("[admin-projects:loadProjects]", error);
+      setMessage(error.message || "Could not load projects.");
       return false;
     } finally {
       setLoading(false);
@@ -147,8 +167,7 @@ export default function ScopedProjectsPage() {
       headers: { "x-admin-password": storedPassword },
       body: uploadData
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Image upload failed.");
+    const data = await parseApiResponse(response);
     return data.image_url;
   }
 
@@ -168,11 +187,7 @@ export default function ScopedProjectsPage() {
         },
         body: JSON.stringify({ ...form, image: imageUrl, features: textToFeatures(featuresText) })
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Save failed.");
-      }
+      await parseApiResponse(response);
 
       await loadProjects();
       setEditing(null);
@@ -198,11 +213,7 @@ export default function ScopedProjectsPage() {
         method: "DELETE",
         headers: { "x-admin-password": storedPassword }
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Delete failed.");
-      }
+      await parseApiResponse(response);
 
       await loadProjects();
       setMessage("Project deleted.");

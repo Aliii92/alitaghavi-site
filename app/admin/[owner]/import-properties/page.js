@@ -10,6 +10,27 @@ const advisorConfig = {
 
 const previewColumns = ["id", "title", "area", "building", "inventory_type", "property_type", "bedrooms", "size", "price", "status"];
 
+async function parseApiResponse(response) {
+  const raw = await response.text();
+  let data = null;
+
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const message =
+      data?.error ||
+      raw ||
+      (response.status === 401 ? "Invalid password." : `Request failed with status ${response.status}.`);
+    throw new Error(message);
+  }
+
+  return data || {};
+}
+
 export default function BulkImportPropertiesPage() {
   const { owner } = useParams();
   const router = useRouter();
@@ -64,13 +85,12 @@ export default function BulkImportPropertiesPage() {
         },
         body: formData
       });
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.error || "Could not preview import.");
+      const data = await parseApiResponse(response);
 
       setPreview(data);
       setMessage(`Preview ready: ${data.valid} valid rows, ${data.failed} rows with issues.`);
     } catch (error) {
+      console.error("[admin-import-properties:previewImport]", error);
       setMessage(error.message || "Could not preview import.");
     } finally {
       setLoading(false);
@@ -95,18 +115,7 @@ export default function BulkImportPropertiesPage() {
         },
         body: JSON.stringify({ rows: validRows })
       });
-      const payloadText = await response.text();
-      let data = {};
-
-      try {
-        data = payloadText ? JSON.parse(payloadText) : {};
-      } catch {
-        data = {};
-      }
-
-      if (!response.ok) {
-        throw new Error(data.error || payloadText || "Import failed.");
-      }
+      const data = await parseApiResponse(response);
 
       setMessage(`${data.imported || 0} properties imported successfully${data.updated ? `, ${data.updated} updated` : ""}.`);
       setPreview(null);

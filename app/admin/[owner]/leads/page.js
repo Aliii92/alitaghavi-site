@@ -8,6 +8,27 @@ const advisorConfig = {
   negin: { label: "Negin Mohamadi", storageKey: "negin_admin_password" }
 };
 
+async function parseApiResponse(response) {
+  const raw = await response.text();
+  let data = null;
+
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const message =
+      data?.error ||
+      raw ||
+      (response.status === 401 ? "Invalid password." : `Request failed with status ${response.status}.`);
+    throw new Error(message);
+  }
+
+  return data;
+}
+
 export default function ScopedLeadsPage() {
   const { owner } = useParams();
   const config = advisorConfig[owner] || advisorConfig.ali;
@@ -34,14 +55,13 @@ export default function ScopedLeadsPage() {
       const response = await fetch("/api/leads", {
         headers: authPassword ? { "x-admin-password": authPassword } : {}
       });
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.error || "Unauthorized");
+      const data = await parseApiResponse(response);
 
       setLeads(Array.isArray(data) ? data : []);
       return true;
-    } catch {
-      setMessage("Invalid password or could not load leads.");
+    } catch (error) {
+      console.error("[admin-leads:loadLeads]", error);
+      setMessage(error.message || "Could not load leads.");
       return false;
     } finally {
       setLoading(false);

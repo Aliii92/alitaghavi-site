@@ -20,32 +20,37 @@ function extensionFor(file) {
 }
 
 export async function POST(request) {
-  if (!ownerFromRequest(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    if (!ownerFromRequest(request)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const formData = await request.formData();
+    const file = formData.get("image");
+    const propertyId = formData.get("propertyId");
+
+    if (!file || typeof file === "string") {
+      return NextResponse.json({ error: "Missing image file" }, { status: 400 });
+    }
+
+    if (!allowedTypes.has(file.type)) {
+      return NextResponse.json({ error: "Only JPG, PNG, and WEBP images are allowed" }, { status: 400 });
+    }
+
+    const uploadsDir = path.join(process.cwd(), "public", "uploads");
+    await fs.mkdir(uploadsDir, { recursive: true });
+
+    const filename = `${safeName(propertyId)}-${Date.now()}.${extensionFor(file)}`;
+    const filepath = path.join(uploadsDir, filename);
+    const bytes = Buffer.from(await file.arrayBuffer());
+
+    await fs.writeFile(filepath, bytes);
+
+    return NextResponse.json({
+      image_url: `/uploads/${filename}`
+    });
+  } catch (error) {
+    console.error("[api/uploads:POST]", error);
+    return NextResponse.json({ error: error.message || "Image upload failed." }, { status: 500 });
   }
-
-  const formData = await request.formData();
-  const file = formData.get("image");
-  const propertyId = formData.get("propertyId");
-
-  if (!file || typeof file === "string") {
-    return NextResponse.json({ error: "Missing image file" }, { status: 400 });
-  }
-
-  if (!allowedTypes.has(file.type)) {
-    return NextResponse.json({ error: "Only JPG, PNG, and WEBP images are allowed" }, { status: 400 });
-  }
-
-  const uploadsDir = path.join(process.cwd(), "public", "uploads");
-  await fs.mkdir(uploadsDir, { recursive: true });
-
-  const filename = `${safeName(propertyId)}-${Date.now()}.${extensionFor(file)}`;
-  const filepath = path.join(uploadsDir, filename);
-  const bytes = Buffer.from(await file.arrayBuffer());
-
-  await fs.writeFile(filepath, bytes);
-
-  return NextResponse.json({
-    image_url: `/uploads/${filename}`
-  });
 }

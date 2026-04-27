@@ -51,6 +51,27 @@ function textToList(value) {
     .filter(Boolean);
 }
 
+async function parseApiResponse(response) {
+  const raw = await response.text();
+  let data = null;
+
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const message =
+      data?.error ||
+      raw ||
+      (response.status === 401 ? "Invalid password." : `Request failed with status ${response.status}.`);
+    throw new Error(message);
+  }
+
+  return data;
+}
+
 export default function AdminAreasPage() {
   const { owner } = useParams();
   const config = advisorConfig[owner] || advisorConfig.ali;
@@ -86,14 +107,13 @@ export default function AdminAreasPage() {
       const response = await fetch("/api/areas?admin=true", {
         headers: authPassword ? { "x-admin-password": authPassword } : {}
       });
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.error || "Unauthorized");
+      const data = await parseApiResponse(response);
 
       setAreas(Array.isArray(data) ? data : []);
       return true;
-    } catch {
-      setMessage("Invalid password or could not load prime areas.");
+    } catch (error) {
+      console.error("[admin-areas:loadAreas]", error);
+      setMessage(error.message || "Could not load prime areas.");
       return false;
     } finally {
       setLoading(false);
@@ -340,8 +360,7 @@ export default function AdminAreasPage() {
       headers: { "x-admin-password": storedPassword },
       body: uploadData
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Image upload failed.");
+    const data = await parseApiResponse(response);
     return data.image_url;
   }
 
@@ -372,11 +391,7 @@ export default function AdminAreasPage() {
         },
         body: JSON.stringify(payload)
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Save failed.");
-      }
+      await parseApiResponse(response);
 
       await loadAreas();
       cancelEdit();
@@ -398,11 +413,7 @@ export default function AdminAreasPage() {
         method: "DELETE",
         headers: { "x-admin-password": storedPassword }
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Delete failed.");
-      }
+      await parseApiResponse(response);
 
       await loadAreas();
       setMessage("Prime area deleted.");
