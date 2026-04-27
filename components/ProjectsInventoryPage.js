@@ -1,10 +1,12 @@
 import LeadWhatsAppButton from "./LeadWhatsAppButton";
 import AreaPropertyFilters from "./AreaPropertyFilters";
 import ResponsiveNavbar from "./ResponsiveNavbar";
+import ProjectImage from "./ProjectImage";
 import { buildLeadPayload, buildPropertyWhatsAppUrl } from "../lib/whatsapp.js";
 import { offPlanProjectsPathFor, readyPropertiesPathFor, resaleOffPlanPathFor } from "../lib/public-context.js";
 import { readProperties } from "../lib/properties.js";
 import { projectToProperty, readProjects } from "../lib/projects.js";
+import { resolveProjectImage } from "../lib/project-images.js";
 import { formatPriceDisplay } from "../lib/price.js";
 import { localizePath } from "../lib/locale";
 import { getRequestLocale } from "../lib/server-locale";
@@ -77,14 +79,19 @@ function ProjectListingCard({ project, contextOwner = "ali" }) {
     sourcePage
   });
   const displayPrice = formatPriceDisplay(project.startingPrice);
+  const imageSrc = resolveProjectImage(project);
+
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[off-plan-project-card]", project);
+  }
 
   return (
     <article className="listing-card compact-listing-card">
-      {project.image ? (
-        <div className="listing-image compact-listing-image" style={{ backgroundImage: `url("${project.image}")` }}></div>
-      ) : (
-        <div className="listing-image compact-listing-image project-one"></div>
-      )}
+      <ProjectImage
+        className="listing-image compact-listing-image project-card-image"
+        src={imageSrc}
+        alt={project.title || "Off-plan project"}
+      />
       <div className="listing-content">
         <span className="listing-label">{project.handoverDate || "Off-Plan"}</span>
         <span className="listing-badge">{project.developer}</span>

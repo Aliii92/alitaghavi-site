@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import AreaPropertyFilters from "../../components/AreaPropertyFilters";
+import ProjectImage from "../../components/ProjectImage";
 import ResponsiveNavbar from "../../components/ResponsiveNavbar";
 import LeadWhatsAppButton from "../../components/LeadWhatsAppButton";
+import { getImageSrc } from "../../lib/get-image-src";
 import { localizePath } from "../../lib/locale";
+import { resolveProjectImage } from "../../lib/project-images";
 import { buildLeadPayload, buildPropertyWhatsAppUrl } from "../../lib/whatsapp";
 import { formatPriceDisplay } from "../../lib/price";
 
@@ -411,10 +414,14 @@ function PropertyCard({ card, cta, locale = "en" }) {
     sourcePage: "Negin Mohamadi Page"
   });
   const displayPrice = formatPriceDisplay(card.price, { locale });
+  const imageSrc = getImageSrc(card, "");
 
   return (
     <article className="listing-card">
-      <div className={`listing-image ${card.imageClass}`}></div>
+      <div
+        className={`listing-image ${card.imageClass || ""}`}
+        style={imageSrc ? { backgroundImage: `url("${imageSrc}")` } : undefined}
+      ></div>
       <div className="listing-content">
         <span className="listing-label">{card.label}</span>
         <span className="listing-badge">{card.badge}</span>
@@ -433,9 +440,18 @@ function PropertyCard({ card, cta, locale = "en" }) {
 }
 
 function ProjectCard({ card }) {
+  const imageSrc = resolveProjectImage(card);
   return (
     <article className="project-card">
-      <div className={`project-image ${card.imageClass}`}></div>
+      {imageSrc ? (
+        <ProjectImage
+          className={`project-image ${card.imageClass || ""} project-card-image`}
+          src={imageSrc}
+          alt={card.title || "Off-plan project"}
+        />
+      ) : (
+        <div className={`project-image ${card.imageClass || ""}`}></div>
+      )}
       <div className="project-content">
         <p className="project-brand">{card.brand}</p>
         <h3>{card.title}</h3>
@@ -451,23 +467,134 @@ function ProjectCard({ card }) {
 }
 
 function AreaCard({ card, locale = "en" }) {
+  const imageSrc = getImageSrc(card, "");
   return (
     <a className="area-card" href={localizePath(`/prime-areas/negin-${card.slug}`, locale)}>
       <div
         className={`area-image ${card.imageClass || ""}`}
-        style={card.image_url ? { backgroundImage: `url("${card.image_url}")` } : undefined}
+        style={imageSrc ? { backgroundImage: `url("${imageSrc}")` } : undefined}
       ></div>
       <div className="area-content">
         <h3>{card.title}</h3>
-        <p>{card.description}</p>
-        <ul className="feature-list">
-          {card.bullets.map((bullet) => (
-            <li key={bullet}>{bullet}</li>
-          ))}
-        </ul>
+        {card.description ? <p>{card.description}</p> : null}
+        {card.bullets.length ? (
+          <ul className="feature-list">
+            {card.bullets.map((bullet) => (
+              <li key={bullet}>{bullet}</li>
+            ))}
+          </ul>
+        ) : null}
       </div>
     </a>
   );
+}
+
+function normalizeAreaKey(value) {
+  return String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
+
+const primeAreaFallbackContent = {
+  downtown: {
+    title: "Downtown Dubai",
+    description: "Downtown Dubai is one of the city's most prestigious central districts, known for landmark views, premium residences, and strong lifestyle demand.",
+    bullets: ["Burj Khalifa district", "Prime central location", "Luxury lifestyle appeal", "Strong end-user and investor demand"]
+  },
+  "palm-jumeirah": {
+    title: "Palm Jumeirah",
+    description: "Palm Jumeirah is Dubai's signature waterfront address, known for branded residences, private beach access, and long-term prestige value.",
+    bullets: ["Iconic beachfront address", "Branded luxury residences", "High lifestyle appeal", "Long-term prestige value"]
+  },
+  bluewaters: {
+    title: "Bluewaters",
+    description: "Bluewaters is one of Dubai's most vibrant waterfront destinations, known for Ain Dubai, premium residences, and strong lifestyle appeal.",
+    bullets: ["Waterfront lifestyle", "Ain Dubai landmark appeal", "Premium residences", "Strong leisure and lifestyle demand"]
+  },
+  meydan: {
+    title: "Meydan",
+    description: "Meydan is a strategic growth district with luxury communities, improving infrastructure, and strong long-term upside for buyers and investors.",
+    bullets: ["Growth-led district", "Luxury communities", "Future infrastructure upside", "Family and investor appeal"]
+  }
+};
+
+function normalizeAreaBullets(value, fallback = []) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item || "").trim()).filter(Boolean);
+  }
+
+  return String(value || "")
+    .split(/\r?\n|,/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 4)
+    .concat(fallback)
+    .filter((item, index, items) => item && items.indexOf(item) === index)
+    .slice(0, 4);
+}
+
+function buildPrimeAreaCards(managedAreas, fallbackCards, locale) {
+  const fallbackBySlug = new Map(
+    fallbackCards.flatMap((card) => {
+      const keys = new Set([
+        normalizeAreaKey(card.slug),
+        normalizeAreaKey(card.title),
+        normalizeAreaKey(card.id)
+      ]);
+      return [...keys].filter(Boolean).map((key) => [key, card]);
+    })
+  );
+  const sourceCards = managedAreas.length ? managedAreas : fallbackCards;
+
+  return sourceCards
+    .map((area) => {
+      const slug = area.slug || area.id || "";
+      const normalizedKey =
+        normalizeAreaKey(area.slug) ||
+        normalizeAreaKey(area.area_name) ||
+        normalizeAreaKey(area.name) ||
+        normalizeAreaKey(area.id);
+      const fallback = fallbackBySlug.get(normalizedKey) || {};
+      const predefinedFallback = primeAreaFallbackContent[normalizedKey] || {};
+      const title =
+        area.overview_card_title ||
+        area.short_title ||
+        area.area_name ||
+        area.name ||
+        predefinedFallback.title ||
+        fallback.title ||
+        slug;
+      const description =
+        area.short_description ||
+        area.note ||
+        area.excerpt ||
+        area.full_description ||
+        area.lifestyle_text ||
+        area.investment_analysis ||
+        predefinedFallback.description ||
+        fallback.description ||
+        "";
+      const bullets = normalizeAreaBullets(
+        area.bullet_points || area.notes,
+        predefinedFallback.bullets || fallback.bullets || []
+      );
+
+      if (process.env.NODE_ENV !== "production" && !description) {
+        console.log("Missing content for:", area.slug || area.id || area.name);
+      }
+
+      return {
+        slug: slug || normalizedKey,
+        title,
+        description,
+        bullets,
+        image_url: getImageSrc(area, getImageSrc(fallback, "")),
+        imageClass: area.imageClass || fallback.imageClass || ""
+      };
+    })
+    .map((area) => localizeAreaCard(area, locale));
 }
 
 function localizeAreaCard(area, locale) {
@@ -509,24 +636,16 @@ export default function NeginPage() {
   const [locale, setLocale] = useState(pathname?.startsWith("/fa") ? "fa" : "en");
   const [editableAreas, setEditableAreas] = useState([]);
   const t = content[locale];
-  const areaImageMap = new Map(editableAreas.map((area) => [area.slug || area.id, area.image_url]));
+  const areaImageMap = new Map(editableAreas.map((area) => [area.slug || area.id, getImageSrc(area, "")]));
   const managedPrimeAreas = editableAreas
     .filter((area) => area.active !== false && area.featured !== false)
     .sort((left, right) => (left.display_order || 0) - (right.display_order || 0));
-  const primeAreaCards = managedPrimeAreas.length
-    ? managedPrimeAreas.map((area) => ({
-        slug: area.slug,
-        title: area.overview_card_title || area.area_name || area.name,
-        description: area.short_description || area.note,
-        bullets: area.bullet_points || area.notes || [],
-        image_url: area.image_url,
-        imageClass: ""
-      })).map((area) => localizeAreaCard(area, locale))
-    : t.areas.cards.map((card) => ({
-        ...card,
-        image_url: areaImageMap.get(card.slug),
-        imageClass: card.slug ? "" : card.imageClass
-      })).map((area) => localizeAreaCard(area, locale));
+  const fallbackPrimeAreaCards = t.areas.cards.map((card) => ({
+    ...card,
+    image_url: areaImageMap.get(card.slug) || getImageSrc(card, ""),
+    imageClass: card.slug ? "" : card.imageClass
+  }));
+  const primeAreaCards = buildPrimeAreaCards(managedPrimeAreas, fallbackPrimeAreaCards, locale);
   const [formData, setFormData] = useState({
     name: "",
     email: "",

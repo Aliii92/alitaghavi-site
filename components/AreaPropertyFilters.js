@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import AreaPropertyCard from "./AreaPropertyCard";
 import BuildingGroupedListings from "./BuildingGroupedListings";
+import { isPubliclyVisibleProperty } from "../lib/property-visibility.js";
 import {
   offPlanProjectsPathFor,
   readyPropertiesPathFor,
@@ -362,6 +363,10 @@ export default function AreaPropertyFilters({
     const maxBudget = maxPrice ? parsePrice(maxPrice) : Infinity;
 
     return properties.filter((property) => {
+      if (!isPubliclyVisibleProperty(property)) {
+        return false;
+      }
+
       const propertyPrice = parsePrice(property.price);
       const bedroomCount = parseBedroomCount(property.bedrooms || property.title);
       const matchesBedrooms =

@@ -3,6 +3,7 @@ import ResponsiveNavbar from "./ResponsiveNavbar";
 import { readAreas } from "../lib/areas.js";
 import {
   isReadyProperty,
+  isPubliclyVisibleProperty,
   matchesAreaSlug,
   normalizeAreaSlug,
   isResaleOffPlanProperty,
@@ -14,6 +15,7 @@ import {
   readyPropertiesPathFor,
   resaleOffPlanPathFor
 } from "../lib/public-context.js";
+import { getImageSrc } from "../lib/get-image-src.js";
 import { localizePath } from "../lib/locale";
 import { getRequestLocale } from "../lib/server-locale";
 
@@ -22,6 +24,24 @@ const primaryAreaOrder = ["Palm Jumeirah", "Downtown", "Bluewaters", "Meydan"];
 const primaryAreaNames = new Set(primaryAreaOrder);
 const searchKeys = ["q", "category", "bedrooms", "property_type", "min_price", "max_price", "handover"];
 const promotionThreshold = 4;
+const primaryAreaFallbacks = {
+  "palm-jumeirah": {
+    name: "Palm Jumeirah",
+    note: "Curated ready properties in Dubai's signature waterfront address."
+  },
+  downtown: {
+    name: "Downtown",
+    note: "Curated ready properties in Dubai's flagship central district."
+  },
+  bluewaters: {
+    name: "Bluewaters",
+    note: "Curated ready properties in one of Dubai's most distinctive waterfront island addresses."
+  },
+  meydan: {
+    name: "Meydan",
+    note: "Curated ready properties in a strategic luxury growth district."
+  }
+};
 
 function slugifyArea(value) {
   return String(value || "area")
@@ -47,12 +67,18 @@ function groupByArea(properties) {
 function areaMetaFor(name, areas, fallbackItems = [], fallbackNote = "") {
   const slug = slugifyArea(name);
   const existing = areas.find((area) => area.name === name || area.slug === slug || area.id === slug);
+  const fallback = primaryAreaFallbacks[slug];
+  const derivedName =
+    existing?.name ||
+    existing?.area_name ||
+    fallback?.name ||
+    name;
 
   return {
     slug: existing?.slug || slug,
-    name,
-    note: existing?.note || fallbackNote || `Curated opportunities in ${name}.`,
-    image_url: existing?.image_url || "",
+    name: derivedName,
+    note: existing?.note || existing?.short_description || fallback?.note || fallbackNote || `Curated opportunities in ${derivedName}.`,
+    image_url: getImageSrc(existing || {}, ""),
     imageClass: existing?.imageClass || "project-three",
     items: fallbackItems
   };
@@ -194,9 +220,10 @@ function NavBar({ owner = "ali", locale = "en" }) {
 }
 
 function filterPropertiesByInventory(properties, inventoryType) {
-  if (inventoryType === "all") return properties;
-  if (inventoryType === "resale-off-plan") return properties.filter(isResaleOffPlanProperty);
-  return properties.filter(isReadyProperty);
+  const visibleProperties = properties.filter(isPubliclyVisibleProperty);
+  if (inventoryType === "all") return visibleProperties;
+  if (inventoryType === "resale-off-plan") return visibleProperties.filter(isResaleOffPlanProperty);
+  return visibleProperties.filter(isReadyProperty);
 }
 
 export default async function PropertiesInventoryPage({ searchParams, owner = "ali", inventoryType = "ready" }) {
@@ -205,25 +232,48 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
   const hasSearch = searchKeys.some((key) => params?.[key]);
   const config = inventoryCopy(locale, inventoryType);
   const areas = (await readAreas()).filter((area) => area.owner === owner);
-  const baseProperties = await readProperties();
+  let baseProperties = [];
+  let propertySource = "supabase";
+
+  try {
+    baseProperties = await readProperties({
+      allowFallback: false,
+      inventoryType: inventoryType === "all" ? "all" : inventoryType
+    });
+  } catch (error) {
+    console.warn(`[public-properties:${inventoryType}] Supabase unavailable, falling back to local JSON:`, error.message || error);
+    baseProperties = await readProperties({
+      allowFallback: true,
+      inventoryType: inventoryType === "all" ? "all" : inventoryType
+    });
+    propertySource = "local-fallback";
+  }
+
   const projectProperties = (await readProjects()).map(projectToProperty);
   const searchableInventory = [...baseProperties, ...projectProperties];
   const properties = filterPropertiesByInventory(baseProperties, inventoryType);
   const propertiesByArea = groupByArea(properties);
   const areaBasePath = inventoryType === "resale-off-plan"
     ? `${owner === "negin" ? "/negin" : ""}/resale-off-plan`
-    : `${owner === "negin" ? "/negin/listings" : "/listings"}`;
+    : `${owner === "negin" ? "/negin/areas" : "/areas"}`;
   const overviewBasePath = inventoryType === "resale-off-plan"
     ? resaleOffPlanPathFor(owner)
     : readyPropertiesPathFor(owner);
 
   const defaultGroups = visibleAreaSlugs
-    .map((slug) => areas.find((area) => area.slug === slug || area.id === slug))
-    .filter(Boolean)
-    .map((area) => ({
-      ...area,
-      items: properties.filter((property) => matchesAreaSlug(property, area.slug, area.aliases))
-    }));
+    .map((slug) => {
+      const area = areas.find((item) => item.slug === slug || item.id === slug);
+      const fallbackName = primaryAreaFallbacks[slug]?.name || slug;
+      const items = properties.filter((property) => matchesAreaSlug(property, slug, area?.aliases));
+      return {
+        ...(area || {}),
+        slug,
+        name: area?.name || area?.area_name || fallbackName,
+        note: area?.note || area?.short_description || primaryAreaFallbacks[slug]?.note || `Curated opportunities in ${fallbackName}.`,
+        items
+      };
+    })
+    .filter((group) => group.items.length > 0);
   const promotedGroups = [...propertiesByArea.entries()]
     .filter(([, group]) => !primaryAreaNames.has(group.name) && group.items.length >= promotionThreshold)
     .sort(([, leftGroup], [, rightGroup]) => leftGroup.name.localeCompare(rightGroup.name))
@@ -246,18 +296,34 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
     }
   ].filter((group) => group.items.length > 0 || group.slug === "other-areas");
 
-  if (inventoryType === "ready") {
-    properties.forEach((property) => {
+  if (process.env.NODE_ENV !== "production") {
+    console.log(
+      `[public-properties:${inventoryType}] source=${propertySource} totalFetched=${baseProperties.length} afterInventoryFilter=${properties.length} overviewGroups=${overviewGroups.length}`
+    );
+    if (inventoryType === "resale-off-plan") {
+      console.log("Resale off-plan listings:", properties.length);
+    }
+  }
+
+  if (inventoryType === "ready" && process.env.NODE_ENV !== "production") {
+    const reasonCounts = {};
+    baseProperties.forEach((property) => {
       const reasons = [];
       if (!isReadyProperty(property)) reasons.push("not-ready-category");
+      if (!isPubliclyVisibleProperty(property)) reasons.push(`status-excluded:${property.status || "missing"}`);
       if (!property.area) reasons.push("missing-area");
       if (!property.title) reasons.push("missing-title");
       if (!property.building) reasons.push("missing-building");
+
+      reasons.forEach((reason) => {
+        reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
+      });
 
       console.log(
         `[public-ready-visibility] ${property.id} :: ${reasons.length ? `excluded=${reasons.join(",")}` : "included=ready-overview"}`
       );
     });
+    console.log(`[public-ready-visibility-summary] total=${baseProperties.length} included=${properties.length} excluded=${baseProperties.length - properties.length} reasons=${JSON.stringify(reasonCounts)}`);
   }
 
   return (
@@ -302,10 +368,9 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
                 <a className="listing-card area-overview-card" href={`${areaBasePath}/${group.slug}`} key={group.slug}>
                   <div
                     className={`listing-image area-overview-image ${group.imageClass || ""}`}
-                    style={group.image_url ? { backgroundImage: `url("${group.image_url}")` } : undefined}
+                    style={getImageSrc(group, "") ? { backgroundImage: `url("${getImageSrc(group, "")}")` } : undefined}
                   ></div>
                   <div className="listing-content">
-                    <span className="listing-label">{group.items.length} Opportunities</span>
                     <span className="listing-label">{locale === "fa" ? `${group.items.length} فرصت` : `${group.items.length} Opportunities`}</span>
                     <span className="listing-badge">{locale === "fa" ? "منطقه / ناحیه" : "Area / District"}</span>
                     <h3>{group.name}</h3>

@@ -4,6 +4,7 @@ import { readAreas } from "../lib/areas.js";
 import {
   isReadyProperty,
   isResaleOffPlanProperty,
+  isPubliclyVisibleProperty,
   matchesAreaSlug,
   normalizeAreaSlug,
   readProperties
@@ -20,6 +21,24 @@ import { getRequestLocale } from "../lib/server-locale";
 const visibleAreaSlugs = ["palm-jumeirah", "downtown", "bluewaters", "meydan"];
 const primaryAreaNames = new Set(["Palm Jumeirah", "Downtown", "Bluewaters", "Meydan"]);
 const promotionThreshold = 4;
+const primaryAreaFallbacks = {
+  "palm-jumeirah": {
+    name: "Palm Jumeirah",
+    note: "Explore curated ready properties in Palm Jumeirah."
+  },
+  downtown: {
+    name: "Downtown",
+    note: "Explore curated ready properties in Downtown."
+  },
+  bluewaters: {
+    name: "Bluewaters",
+    note: "Explore curated ready properties in Bluewaters."
+  },
+  meydan: {
+    name: "Meydan",
+    note: "Explore curated ready properties in Meydan."
+  }
+};
 
 function slugifyArea(value) {
   return String(value || "area")
@@ -72,8 +91,9 @@ function inventoryConfig(inventoryType, locale = "en") {
 }
 
 function filterPropertiesByInventory(properties, inventoryType) {
-  if (inventoryType === "resale-off-plan") return properties.filter(isResaleOffPlanProperty);
-  return properties.filter(isReadyProperty);
+  const visibleProperties = properties.filter(isPubliclyVisibleProperty);
+  if (inventoryType === "resale-off-plan") return visibleProperties.filter(isResaleOffPlanProperty);
+  return visibleProperties.filter(isReadyProperty);
 }
 
 function resolveSelectedArea(areaSlug, areas, properties = [], inventoryType = "ready") {
@@ -89,7 +109,27 @@ function resolveSelectedArea(areaSlug, areas, properties = [], inventoryType = "
   }
 
   const existing = areas.find((item) => item.slug === areaSlug || item.id === areaSlug);
-  if (existing) return existing;
+  const propertyMatches = properties.filter((property) => matchesAreaSlug(property, areaSlug, existing?.aliases));
+  const derivedAreaName =
+    existing?.name ||
+    existing?.area_name ||
+    propertyMatches[0]?.area ||
+    primaryAreaFallbacks[areaSlug]?.name ||
+    "";
+  const derivedNote =
+    existing?.note ||
+    existing?.short_description ||
+    primaryAreaFallbacks[areaSlug]?.note ||
+    (derivedAreaName ? `Curated opportunities in ${derivedAreaName}.` : "");
+
+  if (existing) {
+    return {
+      ...existing,
+      slug: existing.slug || areaSlug,
+      name: derivedAreaName,
+      note: derivedNote
+    };
+  }
 
   const promotedName = [...promotedAreaNames(properties)].find((areaName) => slugifyArea(areaName) === areaSlug);
   if (!promotedName) return null;
@@ -188,7 +228,23 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
   const { area } = await params;
   const config = inventoryConfig(inventoryType, locale);
   const areas = (await readAreas()).filter((item) => item.owner === owner);
-  const readyAndResaleProperties = await readProperties();
+  let readyAndResaleProperties = [];
+  let propertySource = "supabase";
+
+  try {
+    readyAndResaleProperties = await readProperties({
+      allowFallback: false,
+      inventoryType: inventoryType === "resale-off-plan" ? "resale-off-plan" : "ready"
+    });
+  } catch (error) {
+    console.warn(`[public-area:${area}] Supabase unavailable, falling back to local JSON:`, error.message || error);
+    readyAndResaleProperties = await readProperties({
+      allowFallback: true,
+      inventoryType: inventoryType === "resale-off-plan" ? "resale-off-plan" : "ready"
+    });
+    propertySource = "local-fallback";
+  }
+
   const projectProperties = (await readProjects()).map(projectToProperty);
   const searchableInventory = [...readyAndResaleProperties, ...projectProperties];
   const allProperties = filterPropertiesByInventory(readyAndResaleProperties, inventoryType);
@@ -202,21 +258,35 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
         })
       : allProperties.filter((property) => matchesAreaSlug(property, selectedArea.slug, selectedArea.aliases))
     : [];
+  const areaScopedSearchableInventory = areaProperties;
   const overviewPath = inventoryType === "resale-off-plan"
     ? resaleOffPlanPathFor(owner)
     : readyPropertiesPathFor(owner);
 
-  if (inventoryType === "ready") {
-    allProperties.forEach((property) => {
+  if (process.env.NODE_ENV !== "production") {
+    console.log(
+      `[public-area:${area}] source=${propertySource} totalFetched=${readyAndResaleProperties.length} afterInventoryFilter=${allProperties.length} afterAreaFilter=${areaProperties.length}`
+    );
+  }
+
+  if (inventoryType === "ready" && process.env.NODE_ENV !== "production") {
+    const reasonCounts = {};
+    readyAndResaleProperties.forEach((property) => {
       const reasons = [];
       if (!isReadyProperty(property)) reasons.push("not-ready-category");
+      if (!isPubliclyVisibleProperty(property)) reasons.push(`status-excluded:${property.status || "missing"}`);
       if (!selectedArea) reasons.push("no-selected-area");
       else if (selectedArea.slug !== "other-areas" && !matchesAreaSlug(property, selectedArea.slug, selectedArea.aliases)) reasons.push(`area-slug-mismatch:${normalizeAreaSlug(property.area)}!=${selectedArea.slug}`);
+
+      reasons.forEach((reason) => {
+        reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
+      });
 
       console.log(
         `[public-area-visibility:${area}] ${property.id} :: ${reasons.length ? `excluded=${reasons.join(",")}` : "included=area-page"}`
       );
     });
+    console.log(`[public-area-visibility-summary:${area}] total=${readyAndResaleProperties.length} included=${areaProperties.length} excluded=${readyAndResaleProperties.length - areaProperties.length} reasons=${JSON.stringify(reasonCounts)}`);
   }
 
   if (!selectedArea) {
@@ -270,12 +340,12 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
 
           {areaProperties.length ? (
             <AreaPropertyFilters
-              properties={searchableInventory}
-              areaName={selectedArea.name}
+              properties={areaScopedSearchableInventory}
+              areaName={selectedArea.name || primaryAreaFallbacks[selectedArea.slug]?.name || selectedArea.slug}
               advisorName={owner === "negin" ? "Negin Mohamadi" : "Ali Taghavi"}
               phoneNumber={owner === "negin" ? "971505996547" : "971522950316"}
               owner={owner}
-              sourcePage={`${owner === "negin" ? "Negin" : "Ali"} ${config.eyebrow} Area Page: ${selectedArea.name}`}
+              sourcePage={`${owner === "negin" ? "Negin" : "Ali"} ${config.eyebrow} Area Page: ${selectedArea.name || selectedArea.slug}`}
               redirectBase={overviewPath}
               redirectBaseByCategory={{
                 all: owner === "negin" ? "/negin/listings" : "/listings",
@@ -284,6 +354,7 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
                 "resale-off-plan": resaleOffPlanPathFor(owner)
               }}
               defaultCategory={inventoryType}
+              showResults
               groupByBuilding
               initialVisiblePerGroup={3}
               locale={locale}

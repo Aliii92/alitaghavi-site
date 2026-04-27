@@ -547,6 +547,13 @@ button {
   background-position: center;
 }
 
+.project-card-image {
+  display: block;
+  width: 100%;
+  object-fit: cover;
+  background: linear-gradient(135deg, #10273d 0%, #2c5b86 100%);
+}
+
 .listing-image {
   min-height: 246px;
 }

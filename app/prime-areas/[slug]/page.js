@@ -1,6 +1,7 @@
 import AreaPropertyFilters from "../../../components/AreaPropertyFilters";
 import ResponsiveNavbar from "../../../components/ResponsiveNavbar";
 import { readAreas, sanitizeAreaHtml } from "../../../lib/areas.js";
+import { getImageSrc } from "../../../lib/get-image-src";
 import { readProperties } from "../../../lib/properties";
 import { localizePath } from "../../../lib/locale";
 import { getRequestLocale } from "../../../lib/server-locale";
@@ -109,7 +110,7 @@ export default async function PrimeAreaDetailPage({ params }) {
   const relatedProperties = properties.filter((property) => property.owner === owner && areaMatchesProperty(area, property));
   const highlights = area.bullet_points || area.notes || [];
   const articleBody = sanitizeAreaHtml(area.content_body || "");
-  const featuredImage = area.featured_image || area.image_url;
+  const featuredImage = getImageSrc(area);
   const homeHref = owner === "negin" ? "/negin" : "/";
   const backHref = `${homeHref}#areas`;
 

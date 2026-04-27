@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import LeadWhatsAppButton from "./LeadWhatsAppButton";
 import { advisorForOwner } from "../lib/advisors.js";
 import { advisorFromPathname } from "../lib/public-context.js";
+import { getImageSrc } from "../lib/get-image-src.js";
 import { formatPriceDisplay } from "../lib/price.js";
 
 const defaultWhatsAppNumber = "971522950316";
@@ -138,8 +139,8 @@ export default function AreaPropertyCard({
 
   return (
     <article className="listing-card compact-listing-card">
-      {property.image_url ? (
-        <div className="listing-image compact-listing-image" style={{ backgroundImage: `url("${property.image_url}")` }}></div>
+      {imageSrc ? (
+        <div className="listing-image compact-listing-image" style={{ backgroundImage: `url("${imageSrc}")` }}></div>
       ) : (
         <div className="listing-image compact-listing-image featured-three"></div>
       )}
