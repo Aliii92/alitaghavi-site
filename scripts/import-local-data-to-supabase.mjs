@@ -2,19 +2,43 @@ import fs from "fs/promises";
 import path from "path";
 
 const projectRoot = process.cwd();
+const envFilePath = path.join(projectRoot, ".env.local");
+let cachedEnvFile = null;
 
-function env(name) {
-  return process.env[name] || "";
+async function readEnvFile() {
+  if (cachedEnvFile) return cachedEnvFile;
+
+  try {
+    const raw = await fs.readFile(envFilePath, "utf8");
+    cachedEnvFile = raw
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith("#"))
+      .reduce((accumulator, line) => {
+        const separatorIndex = line.indexOf("=");
+        if (separatorIndex === -1) return accumulator;
+
+        const key = line.slice(0, separatorIndex).trim();
+        let value = line.slice(separatorIndex + 1).trim();
+        value = value.replace(/^['"]|['"]$/g, "");
+        accumulator[key] = value;
+        return accumulator;
+      }, {});
+  } catch {
+    cachedEnvFile = {};
+  }
+
+  return cachedEnvFile;
 }
 
-const SUPABASE_URL = env("NEXT_PUBLIC_SUPABASE_URL");
-const SUPABASE_ANON_KEY = env("NEXT_PUBLIC_SUPABASE_ANON_KEY");
-const SUPABASE_SERVICE_ROLE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
-
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.error("Missing Supabase env vars. Required: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY");
-  process.exit(1);
+async function env(name) {
+  const envFile = await readEnvFile();
+  return process.env[name] || envFile[name] || "";
 }
+
+let SUPABASE_URL = "";
+let SUPABASE_ANON_KEY = "";
+let SUPABASE_SERVICE_ROLE_KEY = "";
 
 function headers() {
   return {
@@ -50,10 +74,50 @@ async function upsert(table, rows, onConflict = "id") {
   }
 
   if (!response.ok) {
-    throw new Error(`Failed to upsert ${table}: ${typeof payload === "string" ? payload : JSON.stringify(payload)}`);
+    const error = new Error(`Failed to upsert ${table}: ${typeof payload === "string" ? payload : JSON.stringify(payload)}`);
+    error.payload = payload;
+    throw error;
   }
 
   return payload;
+}
+
+function extractMissingColumn(error) {
+  const message =
+    error?.payload?.message ||
+    error?.message ||
+    "";
+  const match = String(message).match(/Could not find the '([^']+)' column/i);
+  return match ? match[1] : "";
+}
+
+function stripColumn(rows, columnName) {
+  return rows.map((row) => {
+    const clone = { ...row };
+    delete clone[columnName];
+    return clone;
+  });
+}
+
+async function tolerantUpsert(table, rows, onConflict = "id") {
+  let nextRows = rows;
+  const removedColumns = [];
+
+  while (true) {
+    try {
+      const payload = await upsert(table, nextRows, onConflict);
+      return { payload, removedColumns };
+    } catch (error) {
+      const missingColumn = extractMissingColumn(error);
+      if (!missingColumn || removedColumns.includes(missingColumn)) {
+        throw error;
+      }
+
+      removedColumns.push(missingColumn);
+      nextRows = stripColumn(nextRows, missingColumn);
+      console.warn(`[import-local-data-to-supabase] ${table}: retrying without unsupported column "${missingColumn}"`);
+    }
+  }
 }
 
 function normalizeCategory(value) {
@@ -146,6 +210,15 @@ function mapArea(area) {
 }
 
 async function main() {
+  SUPABASE_URL = await env("NEXT_PUBLIC_SUPABASE_URL");
+  SUPABASE_ANON_KEY = await env("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  SUPABASE_SERVICE_ROLE_KEY = await env("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
+    console.error("Missing Supabase env vars. Required: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY");
+    process.exit(1);
+  }
+
   const [properties, projects, areas] = await Promise.all([
     readJson("properties.json"),
     readJson("projects.json"),
@@ -156,19 +229,17 @@ async function main() {
   const readyProperties = mappedProperties.filter((property) => property.category !== "resale-off-plan");
   const resaleProperties = mappedProperties.filter((property) => property.category === "resale-off-plan");
 
-  const results = await Promise.all([
-    upsert("properties", readyProperties),
-    upsert("resale_off_plan", resaleProperties),
-    upsert("off_plan_projects", projects.map(mapProject)),
-    upsert("prime_areas", areas.map(mapArea))
-  ]);
+  const propertiesResult = await tolerantUpsert("properties", readyProperties);
+  const resaleResult = await tolerantUpsert("resale_off_plan", resaleProperties);
+  const projectsResult = await tolerantUpsert("off_plan_projects", projects.map(mapProject));
+  const areasResult = await tolerantUpsert("prime_areas", areas.map(mapArea));
 
-  console.log(`Imported ${readyProperties.length} rows into properties`);
-  console.log(`Imported ${resaleProperties.length} rows into resale_off_plan`);
-  console.log(`Imported ${projects.length} rows into off_plan_projects`);
-  console.log(`Imported ${areas.length} rows into prime_areas`);
+  console.log(`Imported ${readyProperties.length} rows into properties${propertiesResult.removedColumns.length ? ` (ignored columns: ${propertiesResult.removedColumns.join(", ")})` : ""}`);
+  console.log(`Imported ${resaleProperties.length} rows into resale_off_plan${resaleResult.removedColumns.length ? ` (ignored columns: ${resaleResult.removedColumns.join(", ")})` : ""}`);
+  console.log(`Imported ${projects.length} rows into off_plan_projects${projectsResult.removedColumns.length ? ` (ignored columns: ${projectsResult.removedColumns.join(", ")})` : ""}`);
+  console.log(`Imported ${areas.length} rows into prime_areas${areasResult.removedColumns.length ? ` (ignored columns: ${areasResult.removedColumns.join(", ")})` : ""}`);
   console.log("Supabase import complete.");
-  return results;
+  return [propertiesResult, resaleResult, projectsResult, areasResult];
 }
 
 main().catch((error) => {

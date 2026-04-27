@@ -3,6 +3,8 @@ import ResponsiveNavbar from "./ResponsiveNavbar";
 import { readAreas } from "../lib/areas.js";
 import {
   isReadyProperty,
+  matchesAreaSlug,
+  normalizeAreaSlug,
   isResaleOffPlanProperty,
   readProperties
 } from "../lib/properties.js";
@@ -34,8 +36,9 @@ function groupByArea(properties) {
 
   properties.forEach((property) => {
     const area = String(property.area || "").trim() || "Other Areas";
-    if (!groups.has(area)) groups.set(area, []);
-    groups.get(area).push(property);
+    const areaSlug = normalizeAreaSlug(area) || "other-areas";
+    if (!groups.has(areaSlug)) groups.set(areaSlug, { name: area, items: [] });
+    groups.get(areaSlug).items.push(property);
   });
 
   return groups;
@@ -219,16 +222,16 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
     .filter(Boolean)
     .map((area) => ({
       ...area,
-      items: properties.filter((property) => property.area === area.name)
+      items: properties.filter((property) => matchesAreaSlug(property, area.slug, area.aliases))
     }));
   const promotedGroups = [...propertiesByArea.entries()]
-    .filter(([areaName, items]) => !primaryAreaNames.has(areaName) && items.length >= promotionThreshold)
-    .sort(([leftName], [rightName]) => leftName.localeCompare(rightName))
-    .map(([areaName, items]) => areaMetaFor(areaName, areas, items));
+    .filter(([, group]) => !primaryAreaNames.has(group.name) && group.items.length >= promotionThreshold)
+    .sort(([, leftGroup], [, rightGroup]) => leftGroup.name.localeCompare(rightGroup.name))
+    .map(([, group]) => areaMetaFor(group.name, areas, group.items));
   const promotedNames = new Set(promotedGroups.map((group) => group.name));
   const otherAreaProperties = [...propertiesByArea.entries()]
-    .filter(([areaName]) => !primaryAreaNames.has(areaName) && !promotedNames.has(areaName))
-    .flatMap(([, items]) => items);
+    .filter(([, group]) => !primaryAreaNames.has(group.name) && !promotedNames.has(group.name))
+    .flatMap(([, group]) => group.items);
   const overviewGroups = [
     ...primaryAreaOrder
       .map((areaName) => defaultGroups.find((group) => group.name === areaName))
@@ -242,6 +245,20 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
       items: otherAreaProperties
     }
   ].filter((group) => group.items.length > 0 || group.slug === "other-areas");
+
+  if (inventoryType === "ready") {
+    properties.forEach((property) => {
+      const reasons = [];
+      if (!isReadyProperty(property)) reasons.push("not-ready-category");
+      if (!property.area) reasons.push("missing-area");
+      if (!property.title) reasons.push("missing-title");
+      if (!property.building) reasons.push("missing-building");
+
+      console.log(
+        `[public-ready-visibility] ${property.id} :: ${reasons.length ? `excluded=${reasons.join(",")}` : "included=ready-overview"}`
+      );
+    });
+  }
 
   return (
     <main className="luxury-page listings-page">

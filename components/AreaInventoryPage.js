@@ -4,6 +4,8 @@ import { readAreas } from "../lib/areas.js";
 import {
   isReadyProperty,
   isResaleOffPlanProperty,
+  matchesAreaSlug,
+  normalizeAreaSlug,
   readProperties
 } from "../lib/properties.js";
 import { projectToProperty, readProjects } from "../lib/projects.js";
@@ -32,8 +34,9 @@ function groupByArea(properties) {
 
   properties.forEach((property) => {
     const area = String(property.area || "").trim() || "Other Areas";
-    if (!groups.has(area)) groups.set(area, []);
-    groups.get(area).push(property);
+    const areaSlug = normalizeAreaSlug(area) || "other-areas";
+    if (!groups.has(areaSlug)) groups.set(areaSlug, { name: area, items: [] });
+    groups.get(areaSlug).items.push(property);
   });
 
   return groups;
@@ -42,8 +45,8 @@ function groupByArea(properties) {
 function promotedAreaNames(properties) {
   return new Set(
     [...groupByArea(properties).entries()]
-      .filter(([areaName, items]) => !primaryAreaNames.has(areaName) && items.length >= promotionThreshold)
-      .map(([areaName]) => areaName)
+      .filter(([, group]) => !primaryAreaNames.has(group.name) && group.items.length >= promotionThreshold)
+      .map(([, group]) => group.name)
   );
 }
 
@@ -193,12 +196,28 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
   const promotedNames = promotedAreaNames(allProperties);
   const areaProperties = selectedArea
     ? selectedArea.slug === "other-areas"
-      ? allProperties.filter((property) => !primaryAreaNames.has(property.area) && !promotedNames.has(property.area))
-      : allProperties.filter((property) => property.area === selectedArea.name)
+      ? allProperties.filter((property) => {
+          const propertyAreaName = String(property.area || "").trim() || "Other Areas";
+          return !primaryAreaNames.has(propertyAreaName) && !promotedNames.has(propertyAreaName);
+        })
+      : allProperties.filter((property) => matchesAreaSlug(property, selectedArea.slug, selectedArea.aliases))
     : [];
   const overviewPath = inventoryType === "resale-off-plan"
     ? resaleOffPlanPathFor(owner)
     : readyPropertiesPathFor(owner);
+
+  if (inventoryType === "ready") {
+    allProperties.forEach((property) => {
+      const reasons = [];
+      if (!isReadyProperty(property)) reasons.push("not-ready-category");
+      if (!selectedArea) reasons.push("no-selected-area");
+      else if (selectedArea.slug !== "other-areas" && !matchesAreaSlug(property, selectedArea.slug, selectedArea.aliases)) reasons.push(`area-slug-mismatch:${normalizeAreaSlug(property.area)}!=${selectedArea.slug}`);
+
+      console.log(
+        `[public-area-visibility:${area}] ${property.id} :: ${reasons.length ? `excluded=${reasons.join(",")}` : "included=area-page"}`
+      );
+    });
+  }
 
   if (!selectedArea) {
     return (
