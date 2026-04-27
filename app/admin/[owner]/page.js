@@ -46,7 +46,7 @@ export default function ScopedAdminPage() {
   const pathname = usePathname();
   const config = advisorConfig[owner] || advisorConfig.ali;
   const basePath = `/admin/${owner}`;
-  const inventoryScope = pathname?.includes("/resale-off-plan") ? "resale-off-plan" : "all";
+  const inventoryScope = pathname?.includes("/resale-off-plan") ? "resale-off-plan" : "standard";
   const isResaleScope = inventoryScope === "resale-off-plan";
   const pageTitle = isResaleScope ? "Resale Off-Plan Listings" : "Property Listings";
   const pageDescription = isResaleScope
@@ -73,7 +73,11 @@ export default function ScopedAdminPage() {
   }, [isResaleScope]);
 
   const scopedProperties = useMemo(
-    () => properties.filter((property) => inventoryScope === "all" || property.category === inventoryScope),
+    () =>
+      properties.filter((property) => {
+        if (inventoryScope === "resale-off-plan") return property.category === "resale-off-plan";
+        return property.category !== "resale-off-plan";
+      }),
     [inventoryScope, properties]
   );
   const featuredCount = useMemo(() => scopedProperties.filter((property) => property.featured).length, [scopedProperties]);
@@ -165,24 +169,26 @@ export default function ScopedAdminPage() {
       setStoredPassword(saved);
       loadProperties(saved);
     }
-  }, [config.storageKey]);
+  }, [config.storageKey, inventoryScope]);
 
   async function loadProperties(authPassword = storedPassword) {
     setLoading(true);
     setMessage("");
 
     try {
-      const response = await fetch("/api/properties?admin=true", {
+      const response = await fetch(`/api/properties?admin=true&inventoryType=${encodeURIComponent(inventoryScope)}`, {
         headers: authPassword ? { "x-admin-password": authPassword } : {}
       });
       const data = await response.json();
 
-      if (!response.ok) throw new Error(data.error || "Unauthorized");
+      if (!response.ok) {
+        throw new Error(data.error || (response.status === 401 ? "Invalid password." : "Could not load properties."));
+      }
 
       setProperties(Array.isArray(data) ? data : []);
       return true;
-    } catch {
-      setMessage("Invalid password or could not load properties.");
+    } catch (error) {
+      setMessage(error.message || "Could not load properties.");
       return false;
     } finally {
       setLoading(false);
@@ -409,9 +415,14 @@ export default function ScopedAdminPage() {
           <label>
             <span>Inventory Type</span>
             <select name="category" value={form.category} onChange={handleChange}>
-              <option value="ready">Ready</option>
-              <option value="off-plan">Off-plan</option>
-              <option value="resale-off-plan">Resale Off-Plan</option>
+              {isResaleScope ? (
+                <option value="resale-off-plan">Resale Off-Plan</option>
+              ) : (
+                <>
+                  <option value="ready">Ready</option>
+                  <option value="off-plan">Off-plan</option>
+                </>
+              )}
             </select>
           </label>
 

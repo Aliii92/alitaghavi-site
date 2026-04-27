@@ -20,13 +20,19 @@ export async function GET(request) {
   const adminMode = searchParams.get("admin") === "true";
   const featuredOnly = searchParams.get("featured") === "true";
   const requestedOwner = searchParams.get("owner");
+  const inventoryType = searchParams.get("inventoryType") || "all";
   const adminOwner = ownerFromRequest(request);
 
   if (adminMode && !adminOwner) return forbidden();
 
   const owner = adminMode ? adminOwner : requestedOwner ? normalizeOwner(requestedOwner) : "";
   try {
-    const properties = (await readProperties({ allowFallback: !adminMode })).map((property) => normalizeProperty(property, property.id));
+    const properties = (
+      await readProperties({
+        allowFallback: !adminMode,
+        inventoryType
+      })
+    ).map((property) => normalizeProperty(property, property.id));
     const scopedProperties = owner ? properties.filter((property) => property.owner === owner) : properties;
 
     return NextResponse.json(featuredOnly ? scopedProperties.filter((property) => property.featured) : scopedProperties);
