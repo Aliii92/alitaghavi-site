@@ -1,10 +1,8 @@
 import AreaPropertyFilters from "./AreaPropertyFilters";
 import ResponsiveNavbar from "./ResponsiveNavbar";
-import { readAreas } from "../lib/areas.js";
 import {
   isReadyProperty,
   isPubliclyVisibleProperty,
-  matchesAreaSlug,
   normalizeAreaSlug,
   isResaleOffPlanProperty,
   readProperties
@@ -64,22 +62,17 @@ function groupByArea(properties) {
   return groups;
 }
 
-function areaMetaFor(name, areas, fallbackItems = [], fallbackNote = "") {
+function areaMetaFor(name, fallbackItems = [], fallbackNote = "") {
   const slug = slugifyArea(name);
-  const existing = areas.find((area) => area.name === name || area.slug === slug || area.id === slug);
   const fallback = primaryAreaFallbacks[slug];
-  const derivedName =
-    existing?.name ||
-    existing?.area_name ||
-    fallback?.name ||
-    name;
+  const derivedName = fallback?.name || name;
 
   return {
-    slug: existing?.slug || slug,
+    slug,
     name: derivedName,
-    note: existing?.note || existing?.short_description || fallback?.note || fallbackNote || `Curated opportunities in ${derivedName}.`,
-    image_url: getImageSrc(existing || {}, ""),
-    imageClass: existing?.imageClass || "project-three",
+    note: fallback?.note || fallbackNote || `Curated opportunities in ${derivedName}.`,
+    image_url: "",
+    imageClass: "project-three",
     items: fallbackItems
   };
 }
@@ -231,7 +224,6 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
   const params = await searchParams;
   const hasSearch = searchKeys.some((key) => params?.[key]);
   const config = inventoryCopy(locale, inventoryType);
-  const areas = (await readAreas()).filter((area) => area.owner === owner);
   let baseProperties = [];
   let propertySource = "supabase";
 
@@ -262,14 +254,12 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
 
   const defaultGroups = visibleAreaSlugs
     .map((slug) => {
-      const area = areas.find((item) => item.slug === slug || item.id === slug);
       const fallbackName = primaryAreaFallbacks[slug]?.name || slug;
-      const items = properties.filter((property) => matchesAreaSlug(property, slug, area?.aliases));
+      const items = properties.filter((property) => normalizeAreaSlug(property?.area) === slug);
       return {
-        ...(area || {}),
         slug,
-        name: area?.name || area?.area_name || fallbackName,
-        note: area?.note || area?.short_description || primaryAreaFallbacks[slug]?.note || `Curated opportunities in ${fallbackName}.`,
+        name: fallbackName,
+        note: primaryAreaFallbacks[slug]?.note || `Curated opportunities in ${fallbackName}.`,
         items
       };
     })
@@ -277,7 +267,7 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
   const promotedGroups = [...propertiesByArea.entries()]
     .filter(([, group]) => !primaryAreaNames.has(group.name) && group.items.length >= promotionThreshold)
     .sort(([, leftGroup], [, rightGroup]) => leftGroup.name.localeCompare(rightGroup.name))
-    .map(([, group]) => areaMetaFor(group.name, areas, group.items));
+    .map(([, group]) => areaMetaFor(group.name, group.items));
   const promotedNames = new Set(promotedGroups.map((group) => group.name));
   const otherAreaProperties = [...propertiesByArea.entries()]
     .filter(([, group]) => !primaryAreaNames.has(group.name) && !promotedNames.has(group.name))
