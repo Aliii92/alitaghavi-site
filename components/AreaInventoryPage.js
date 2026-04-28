@@ -101,7 +101,24 @@ function NavBar({ owner = "ali", locale = "en" }) {
   );
 }
 
-function SafeAreaPage({ owner = "ali", locale = "en", config, title, message, overviewPath }) {
+function DebugPanel({ debug }) {
+  if (!debug) return null;
+
+  return (
+    <div className="contact-card empty-listings-card" style={{ marginTop: "1.5rem", textAlign: "left" }}>
+      <h3>Area Debug</h3>
+      <p><strong>areaSlug:</strong> {debug.areaSlug || "(missing)"}</p>
+      <p><strong>Supabase URL exists:</strong> {String(Boolean(debug.supabaseUrlExists))}</p>
+      <p><strong>Supabase key exists:</strong> {String(Boolean(debug.supabaseKeyExists))}</p>
+      <p><strong>Supabase table:</strong> {debug.table || "(missing)"}</p>
+      <p><strong>Supabase error:</strong> {debug.supabaseError || "(none)"}</p>
+      <p><strong>Fetched properties count:</strong> {String(debug.fetchedPropertiesCount ?? 0)}</p>
+      <p><strong>Matched listings count:</strong> {String(debug.matchedListingsCount ?? 0)}</p>
+    </div>
+  );
+}
+
+function SafeAreaPage({ owner = "ali", locale = "en", config, title, message, overviewPath, debug = null }) {
   return (
     <main className="luxury-page listings-page">
       <NavBar owner={owner} locale={locale} />
@@ -114,6 +131,7 @@ function SafeAreaPage({ owner = "ali", locale = "en", config, title, message, ov
             <a className="button secondary-button back-to-listings-button" href={overviewPath}>
               {locale === "fa" ? "بازگشت به همه مناطق" : "Back to All Areas"}
             </a>
+            <DebugPanel debug={debug} />
           </div>
         </section>
       </div>
@@ -212,6 +230,12 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
     console.log("Supabase URL exists:", !!process.env.NEXT_PUBLIC_SUPABASE_URL);
     console.log("Supabase KEY exists:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
     const dynamicAreaSlugs = dynamicAreaNames.map(slugifyArea);
+    const debugBase = {
+      areaSlug,
+      supabaseUrlExists: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      supabaseKeyExists: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      table: "properties"
+    };
 
     if (areaSlug !== "other-areas" && !dynamicAreaSlugs.includes(areaSlug)) {
       redirect(overviewPath);
@@ -274,6 +298,14 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
                   <p>{config.emptyBody}</p>
                 </article>
               )}
+              <DebugPanel
+                debug={{
+                  ...debugBase,
+                  supabaseError: "(none)",
+                  fetchedPropertiesCount: Array.isArray(allRows) ? allRows.length : 0,
+                  matchedListingsCount: areaProperties.length
+                }}
+              />
             </section>
           </div>
         </main>
@@ -301,6 +333,25 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
     console.log("Fetched properties:", Array.isArray(data) ? data.length : 0);
     console.log("Matched area listings:", areaProperties.length);
     console.log("Supabase error:", error);
+
+    if (error) {
+      return (
+        <SafeAreaPage
+          owner={owner}
+          locale={locale}
+          config={config}
+          title={locale === "fa" ? "لیست املاک منطقه" : "Area listings"}
+          message={error.message || String(error)}
+          overviewPath={overviewPath}
+          debug={{
+            ...debugBase,
+            supabaseError: error.message || String(error),
+            fetchedPropertiesCount: Array.isArray(data) ? data.length : 0,
+            matchedListingsCount: areaProperties.length
+          }}
+        />
+      );
+    }
 
     return (
       <main className="luxury-page listings-page">
@@ -343,10 +394,18 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
               />
             ) : (
               <article className="contact-card empty-listings-card">
-                <h3>{locale === "fa" ? `هنوز لیستینگی در ${areaName} موجود نیست.` : "No listings available in this area yet."}</h3>
+                <h3>{locale === "fa" ? `هنوز لیستینگی در ${areaName} موجود نیست.` : "No listings found for this area."}</h3>
                 <p>{config.emptyBody}</p>
               </article>
             )}
+            <DebugPanel
+              debug={{
+                ...debugBase,
+                supabaseError: "(none)",
+                fetchedPropertiesCount: Array.isArray(data) ? data.length : 0,
+                matchedListingsCount: areaProperties.length
+              }}
+            />
           </section>
         </div>
       </main>
@@ -359,8 +418,17 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
         locale={locale}
         config={config}
         title={locale === "fa" ? "لیست املاک منطقه" : "Area listings"}
-        message={locale === "fa" ? "در حال حاضر امکان بارگذاری این منطقه وجود ندارد." : "We could not load this area right now."}
+        message={error?.message || String(error)}
         overviewPath={overviewPath}
+        debug={{
+          areaSlug: "(unknown)",
+          supabaseUrlExists: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+          supabaseKeyExists: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          table: "properties",
+          supabaseError: error?.message || String(error),
+          fetchedPropertiesCount: 0,
+          matchedListingsCount: 0
+        }}
       />
     );
   }
