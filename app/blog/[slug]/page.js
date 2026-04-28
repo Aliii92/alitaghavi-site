@@ -1,17 +1,17 @@
 import { notFound } from "next/navigation";
 import ResponsiveNavbar from "../../../components/ResponsiveNavbar";
-import { getBlogPostBySlug, getBlogSlugs } from "../../../lib/blog";
+import { BLOG_PLACEHOLDER, getBlogPostBySlug, getBlogSlugs } from "../../../lib/blog";
 import { localizePath } from "../../../lib/locale";
 import { getRequestLocale } from "../../../lib/server-locale";
 
 export async function generateStaticParams() {
-  return getBlogSlugs().map((slug) => ({ slug }));
+  return (await getBlogSlugs({ publishedOnly: true })).map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }) {
   const locale = await getRequestLocale();
   const { slug } = await params;
-  const post = getBlogPostBySlug(slug, locale);
+  const post = await getBlogPostBySlug(slug, locale, { publishedOnly: true });
 
   if (!post) {
     return {
@@ -86,7 +86,7 @@ function navLinks(locale = "en") {
 export default async function BlogArticlePage({ params }) {
   const locale = await getRequestLocale();
   const { slug } = await params;
-  const post = getBlogPostBySlug(slug, locale);
+  const post = await getBlogPostBySlug(slug, locale, { publishedOnly: true });
 
   if (!post) notFound();
 
@@ -129,7 +129,7 @@ export default async function BlogArticlePage({ params }) {
         </section>
 
         <article className="blog-article-card">
-          <img className="blog-article-image" src={post.coverImage} alt={post.title} loading="lazy" />
+          <img className="blog-article-image" src={post.coverImage || BLOG_PLACEHOLDER} alt={post.title} loading="lazy" />
           <div className="blog-article-body">
             <div className="blog-meta-line blog-article-meta">
               <span>{post.category}</span>

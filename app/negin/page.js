@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import AreaPropertyFilters from "../../components/AreaPropertyFilters";
 import ProjectImage from "../../components/ProjectImage";
+import ProfileHomePage from "../../components/ProfileHomePage";
 import ResponsiveNavbar from "../../components/ResponsiveNavbar";
 import LeadWhatsAppButton from "../../components/LeadWhatsAppButton";
 import { getImageSrc } from "../../lib/get-image-src";
@@ -642,8 +643,20 @@ export default function NeginPage() {
   const pathname = usePathname();
   const [locale, setLocale] = useState(pathname?.startsWith("/fa") ? "fa" : "en");
   const [editableAreas, setEditableAreas] = useState([]);
+  const [offPlanProjects, setOffPlanProjects] = useState([]);
   const t = content[locale];
   const areaImageMap = new Map(editableAreas.map((area) => [area.slug || area.id, getImageSrc(area, "")]));
+  const featuredCards = t.featured.cards.map((card) => {
+    const slug = normalizeAreaKey(card.slug || card.area || card.badge || card.title);
+    return {
+      slug,
+      title: card.badge || card.area || card.title,
+      description: card.description,
+      href: localizePath(`/negin/areas/${slug}`, locale),
+      image_url: getImageSrc(card, areaImageMap.get(slug) || ""),
+      imageClass: card.imageClass
+    };
+  });
   const managedPrimeAreas = editableAreas
     .filter((area) => area.active !== false && area.featured !== false)
     .sort((left, right) => (left.display_order || 0) - (right.display_order || 0));
@@ -652,7 +665,11 @@ export default function NeginPage() {
     image_url: areaImageMap.get(card.slug) || getImageSrc(card, ""),
     imageClass: card.slug ? "" : card.imageClass
   }));
-  const primeAreaCards = buildPrimeAreaCards(managedPrimeAreas, fallbackPrimeAreaCards, locale);
+  const primeAreaCards = buildPrimeAreaCards(managedPrimeAreas, fallbackPrimeAreaCards, locale).map((card) => ({
+    ...card,
+    href: localizePath(`/prime-areas/negin-${card.slug}`, locale)
+  }));
+  const projectCards = (offPlanProjects.length ? offPlanProjects : t.projects.cards).map((project) => localizeProjectCard(project, locale));
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -693,6 +710,13 @@ export default function NeginPage() {
       .catch(() => setEditableAreas([]));
   }, []);
 
+  useEffect(() => {
+    fetch("/api/projects?featured=true&owner=negin")
+      .then((response) => response.json())
+      .then((projects) => setOffPlanProjects(extractApiItems(projects)))
+      .catch(() => setOffPlanProjects([]));
+  }, []);
+
   function handleChange(event) {
     const { name, value } = event.target;
     setFormData((current) => ({
@@ -705,6 +729,127 @@ export default function NeginPage() {
     event.preventDefault();
     window.open(buildWhatsAppUrl(formData, locale), "_blank", "noopener,noreferrer");
   }
+
+  const testimonialSection = t.testimonials || {
+    eyebrow: locale === "fa" ? "Ø¯ÛŒØ¯Ú¯Ø§Ù‡ Ù…Ø´ØªØ±ÛŒØ§Ù†" : "Client Perspective",
+    title: locale === "fa" ? "Ú†ÛŒØ²ÛŒ Ú©Ù‡ Ù…Ø´ØªØ±ÛŒØ§Ù† Ø§Ø² Ù‡Ù…Ú©Ø§Ø±ÛŒ Ø¨Ø§ Ù†Ú¯ÛŒÙ† Ø§Ø±Ø²Ø´Ù…Ù†Ø¯ Ù…ÛŒâ€ŒØ¯Ø§Ù†Ù†Ø¯" : "What clients value in working with Negin",
+    items: locale === "fa"
+      ? [
+          { quote: "Ù†Ú¯ÛŒÙ† Ø±ÙˆÛŒÚ©Ø±Ø¯ÛŒ Ø¢Ø±Ø§Ù…ØŒ Ø¨Ø§Ø¯Ù‚Øª Ùˆ Ú©Ø§Ù…Ù„Ø§Ù‹ Ù…Ø´ØªØ±ÛŒâ€ŒÙ…Ø­ÙˆØ± Ø¯Ø§Ø´Øª Ùˆ Ø¨Ù‡ Ù…Ø§ Ú©Ù…Ú© Ú©Ø±Ø¯ Ø¨Ù‡ØªØ±ÛŒÙ† Ú¯Ø²ÛŒÙ†Ù‡ Ø±Ø§ Ù…Ù‚Ø§ÛŒØ³Ù‡ Ú©Ù†ÛŒÙ….", name: "Ø®Ø±ÛŒØ¯Ø§Ø± Ø®ØµÙˆØµÛŒ", role: "Ø®Ø±ÛŒØ¯ Ø¨Ø±Ø§ÛŒ Ø³Ú©ÙˆÙ†Øª" },
+          { quote: "Ø§Ø­Ø³Ø§Ø³ Ù…ÛŒâ€ŒÚ©Ø±Ø¯ÛŒÙ… Ú©Ø³ÛŒ Ú©Ù†Ø§Ø±Ù…Ø§Ø³Øª Ú©Ù‡ ÙˆØ§Ù‚Ø¹Ø§Ù‹ Ø§Ù‡Ø¯Ø§Ù Ùˆ Ø§ÙˆÙ„ÙˆÛŒØªâ€ŒÙ‡Ø§ÛŒ Ù…Ø§ Ø±Ø§ Ù…ÛŒâ€ŒÙÙ‡Ù…Ø¯ØŒ Ù†Ù‡ Ø§ÛŒÙ†Ú©Ù‡ ØµØ±ÙØ§Ù‹ Ø¨Ø®ÙˆØ§Ù‡Ø¯ ÛŒÚ© Ù…Ø¹Ø§Ù…Ù„Ù‡ Ø±Ø§ Ø¨Ø¨Ù†Ø¯Ø¯.", name: "Ø³Ø±Ù…Ø§ÛŒÙ‡â€ŒÚ¯Ø°Ø§Ø± Ø¨ÛŒÙ†â€ŒØ§Ù„Ù…Ù„Ù„ÛŒ", role: "Ù…Ø´Ø§ÙˆØ±Ù‡ Ø±ÛŒØ³Ù„" },
+          { quote: "Ø±ÙˆÙ†Ø¯ ØªØµÙ…ÛŒÙ…â€ŒÚ¯ÛŒØ±ÛŒ Ø¨Ø§ Ù†Ú¯ÛŒÙ† Ù…Ù†Ø¸Ù…â€ŒØªØ±ØŒ Ø´ÙØ§Ùâ€ŒØªØ± Ùˆ Ø¨Ø§ Ø§Ø·Ù…ÛŒÙ†Ø§Ù† Ø¨ÛŒØ´ØªØ± Ù¾ÛŒØ´ Ø±ÙØª.", name: "Ù…Ø´ØªØ±ÛŒ Family Office", role: "Ø¨Ø±Ø±Ø³ÛŒ Ø¢Ùâ€ŒÙ¾Ù„Ù†" }
+        ]
+      : [
+          { quote: "Negin brought a calm, highly attentive advisory style that made the shortlist clearer and the final decision much easier.", name: "Private Buyer", role: "End-User Purchase" },
+          { quote: "The process felt thoughtful and well-structured. We always understood the tradeoffs, not just the upside.", name: "International Investor", role: "Resale Advisory" },
+          { quote: "Negin helped us compare options with much more clarity and confidence than we had at the start of the search.", name: "Family Office Client", role: "Off-Plan Review" }
+        ]
+  };
+
+  return (
+    <ProfileHomePage
+      locale={locale}
+      brandLabel="Negin Mohamadi"
+      brandHref={localizePath("/negin", locale)}
+      navLinks={navLinks}
+      hero={{
+        kicker: t.hero.kicker,
+        titleLines: t.hero.titleLines,
+        description: t.hero.description,
+        whatsappHref: `https://wa.me/${neginWhatsappNumber}`,
+        whatsappLabel: t.hero.whatsapp,
+        consultationHref: localizePath("/negin#contact", locale),
+        consultationLabel: t.hero.consultation
+      }}
+      search={{
+        eyebrow: locale === "fa" ? "Ø¬Ø³ØªØ¬ÙˆÛŒ Ù…Ù„Ú©" : "Property Search",
+        title: locale === "fa" ? "ÙØ±ØµØª Ù…Ù†Ø§Ø³Ø¨ Ø¯Ø± Ø¯Ø¨ÛŒ Ø±Ø§ Ø¨Ø§ Ù†Ú¯ÛŒÙ† Ù¾ÛŒØ¯Ø§ Ú©Ù†ÛŒØ¯" : "Find the right Dubai opportunity with Negin",
+        text: locale === "fa" ? "Ø¨Ø± Ø§Ø³Ø§Ø³ Ù…Ù†Ø·Ù‚Ù‡ØŒ Ø³Ø§Ø®ØªÙ…Ø§Ù†ØŒ ØªØ¹Ø¯Ø§Ø¯ Ø®ÙˆØ§Ø¨ØŒ Ø¨ÙˆØ¯Ø¬Ù‡ Ùˆ ÙˆØ¶Ø¹ÛŒØª Ø¢Ù…Ø§Ø¯Ù‡ ÛŒØ§ Ø¢Ùâ€ŒÙ¾Ù„Ù† Ø¬Ø³ØªØ¬Ùˆ Ú©Ù†ÛŒØ¯." : "Search by area, building, bedrooms, price, and ready or off-plan status.",
+        filtersProps: {
+          mode: "redirect",
+          areaName: "Dubai",
+          advisorName: "Negin Mohamadi",
+          phoneNumber: neginWhatsappNumber,
+          owner: "negin",
+          sourcePage: "Negin Mohamadi Page",
+          redirectBase: localizePath("/negin/ready-properties", locale),
+          redirectBaseByCategory: {
+            all: localizePath("/negin/listings", locale),
+            ready: localizePath("/negin/ready-properties", locale),
+            "off-plan": localizePath("/negin/off-plan", locale),
+            "resale-off-plan": localizePath("/negin/resale-off-plan", locale)
+          },
+          intro: locale === "fa" ? "ÙØ±ØµØªâ€ŒÙ‡Ø§ÛŒ Ù…Ù†ØªØ®Ø¨ Ù†Ú¯ÛŒÙ† Ø±Ø§ Ø¬Ø³ØªØ¬Ùˆ Ú©Ù†ÛŒØ¯ Ùˆ Ø³Ù¾Ø³ ÙÙ‡Ø±Ø³Øª Ú©Ø§Ù…Ù„ Ø±Ø§ Ø¨Ø¨ÛŒÙ†ÛŒØ¯." : "Search curated opportunities with Negin, then continue to her full listings page."
+        }
+      }}
+      featured={{
+        eyebrow: t.featured.eyebrow,
+        title: t.featured.title,
+        text: t.featured.text,
+        cards: featuredCards,
+        cta: locale === "fa" ? "Ù…Ø´Ø§Ù‡Ø¯Ù‡ Ù…Ù†Ø·Ù‚Ù‡" : "Explore Area",
+        moreHref: localizePath("/negin/ready-properties", locale),
+        moreLabel: locale === "fa" ? "Ù…Ø´Ø§Ù‡Ø¯Ù‡ Ù‡Ù…Ù‡ Ù…Ù†Ø§Ø·Ù‚ â†" : "View All Areas →"
+      }}
+      projects={{
+        eyebrow: t.projects.eyebrow,
+        title: t.projects.title,
+        text: t.projects.text,
+        cards: projectCards,
+        moreHref: localizePath("/negin/off-plan", locale),
+        moreLabel: t.projects.moreOptions || (locale === "fa" ? "Ù…Ø´Ø§Ù‡Ø¯Ù‡ Ù¾Ø±ÙˆÚ˜Ù‡â€ŒÙ‡Ø§ÛŒ Ø¨ÛŒØ´ØªØ± â†" : "Explore More Off-Plan Projects →")
+      }}
+      areas={{
+        eyebrow: t.areas.eyebrow,
+        title: t.areas.title,
+        text: t.areas.text,
+        cards: primeAreaCards
+      }}
+      advisory={{
+        headingLines: t.advisory.titleLines,
+        intro: t.advisory.intro,
+        servicesTitle: t.advisory.servicesTitle,
+        bullets: t.advisory.bullets,
+        cta: t.advisory.cta,
+        photoSrc: "/negin-photo.svg",
+        photoAlt: "Negin Mohamadi real estate advisory"
+      }}
+      partnership={{
+        eyebrow: t.partnership.eyebrow,
+        title: t.partnership.title,
+        text: t.partnership.text,
+        href: localizePath("/", locale),
+        link: t.partnership.link
+      }}
+      testimonials={testimonialSection}
+      contact={{
+        eyebrow: t.contact.eyebrow,
+        title: t.contact.title,
+        text: t.contact.text,
+        values: formData,
+        onChange: handleChange,
+        onSubmit: handleSubmit,
+        infoTitle: t.contact.infoTitle,
+        connectTitle: t.contact.connectTitle,
+        addressTitle: t.contact.addressTitle || (locale === "fa" ? "Ø¢Ø¯Ø±Ø³" : "Address"),
+        address: t.contact.address || "Unit 201, Building 11, Bay Square, Business Bay, Dubai, UAE",
+        phoneTitle: t.contact.phoneTitle,
+        phone: "+971 50 599 6547",
+        whatsapp: t.contact.whatsapp,
+        instagram: t.contact.instagram,
+        youtube: t.contact.youtube || (locale === "fa" ? "ØªÙ…Ø§Ø´Ø§ Ø¯Ø± ÛŒÙˆØªÛŒÙˆØ¨" : "Watch on YouTube"),
+        submit: t.contact.submit,
+        labels: t.contact.labels,
+        placeholders: t.contact.placeholders,
+        purposes: t.contact.purposes,
+        whatsappHref: `https://wa.me/${neginWhatsappNumber}`,
+        instagramHref: instagramUrl,
+        youtubeHref: youtubeUrl
+      }}
+      floatingWhatsappHref={`https://wa.me/${neginWhatsappNumber}`}
+      floatingWhatsappLabel="Open WhatsApp chat with Negin Mohamadi"
+    />
+  );
 
   return (
     <main className={`luxury-page ${locale === "fa" ? "rtl" : ""}`}>

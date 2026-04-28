@@ -520,12 +520,15 @@ export default function ScopedAdminPage() {
             <a className="button secondary-button" href={`${basePath}/resale-off-plan`}>
               Resale Off-Plan
             </a>
-            <a className="button secondary-button" href={`${basePath}/areas`}>
-              Prime Areas
-            </a>
-            <a className="button secondary-button" href={`${basePath}/import-properties`}>
-              Bulk Import
-            </a>
+              <a className="button secondary-button" href={`${basePath}/areas`}>
+                Prime Areas
+              </a>
+              <a className="button secondary-button" href="/admin/blog">
+                Blog
+              </a>
+              <a className="button secondary-button" href={`${basePath}/import-properties`}>
+                Bulk Import
+              </a>
             <a className="button secondary-button" href={config.siteUrl}>
               View Site
             </a>

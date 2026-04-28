@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import AreaPropertyFilters from "../components/AreaPropertyFilters";
+import ProfileHomePage from "../components/ProfileHomePage";
 import ProjectImage from "../components/ProjectImage";
 import ResponsiveNavbar from "../components/ResponsiveNavbar";
 import { getImageSrc } from "../lib/get-image-src";
@@ -788,7 +789,10 @@ export default function HomePage() {
     image_url: areaImageMap.get(card.slug) || getImageSrc(card, ""),
     imageClass: card.slug ? "" : card.imageClass
   }));
-  const primeAreaCards = buildPrimeAreaCards(managedPrimeAreas, fallbackPrimeAreaCards, locale);
+  const primeAreaCards = buildPrimeAreaCards(managedPrimeAreas, fallbackPrimeAreaCards, locale).map((card) => ({
+    ...card,
+    href: localizePath(`/prime-areas/${card.slug}`, locale)
+  }));
   const projectCards = offPlanProjects.map((project) => localizeProjectCard(project, locale));
   const navLinks = [
     { href: localizePath("/ready-properties", locale), label: t.nav.featured },
@@ -843,6 +847,107 @@ export default function HomePage() {
     event.preventDefault();
     window.open(buildWhatsAppUrl(formData, locale), "_blank", "noopener,noreferrer");
   }
+
+  return (
+    <ProfileHomePage
+      locale={locale}
+      brandLabel="Ali Taghavi"
+      brandHref={localizePath("/#home", locale)}
+      navLinks={navLinks}
+      hero={{
+        kicker: t.hero.subtitle,
+        titleLines: t.hero.titleLines,
+        description: t.hero.text,
+        whatsappHref: `https://wa.me/${whatsappNumber}`,
+        whatsappLabel: t.hero.whatsapp,
+        consultationHref: localizePath("/#contact", locale),
+        consultationLabel: t.hero.consultation
+      }}
+      search={{
+        eyebrow: locale === "fa" ? "Ø¬Ø³ØªØ¬ÙˆÛŒ Ù…Ù„Ú©" : "Property Search",
+        title: locale === "fa" ? "ÙØ±ØµØª Ù…Ù†Ø§Ø³Ø¨ Ø¯Ø± Ø¯Ø¨ÛŒ Ø±Ø§ Ù¾ÛŒØ¯Ø§ Ú©Ù†ÛŒØ¯" : "Find the right Dubai opportunity",
+        text: locale === "fa" ? "Ø¨Ø± Ø§Ø³Ø§Ø³ Ù…Ù†Ø·Ù‚Ù‡ØŒ Ø³Ø§Ø®ØªÙ…Ø§Ù†ØŒ ØªØ¹Ø¯Ø§Ø¯ Ø®ÙˆØ§Ø¨ØŒ Ø¨ÙˆØ¯Ø¬Ù‡ Ùˆ ÙˆØ¶Ø¹ÛŒØª Ø¢Ù…Ø§Ø¯Ù‡ ÛŒØ§ Ø¢Ùâ€ŒÙ¾Ù„Ù† Ø¬Ø³ØªØ¬Ùˆ Ú©Ù†ÛŒØ¯." : "Search by area, building, bedrooms, price, and ready or off-plan status.",
+        filtersProps: {
+          mode: "redirect",
+          areaName: "Dubai",
+          redirectBase: localizePath("/ready-properties", locale),
+          redirectBaseByCategory: {
+            all: localizePath("/listings", locale),
+            ready: localizePath("/ready-properties", locale),
+            "off-plan": localizePath("/off-plan-projects", locale),
+            "resale-off-plan": localizePath("/resale-off-plan", locale)
+          },
+          intro: locale === "fa" ? "Ø¯Ø± Ù…ÛŒØ§Ù† ÙØ±ØµØªâ€ŒÙ‡Ø§ÛŒ Ø¢Ù…Ø§Ø¯Ù‡ Ùˆ Ø¢Ùâ€ŒÙ¾Ù„Ù† Ù…Ù†ØªØ®Ø¨ Ø¬Ø³ØªØ¬Ùˆ Ú©Ù†ÛŒØ¯ Ùˆ Ø³Ù¾Ø³ ÙÙ‡Ø±Ø³Øª Ú©Ø§Ù…Ù„ Ø±Ø§ Ø¨Ø¨ÛŒÙ†ÛŒØ¯." : "Search across curated ready and off-plan opportunities, then continue to the full listings page."
+        }
+      }}
+      featured={{
+        eyebrow: t.featured.eyebrow,
+        title: t.featured.title,
+        text: t.featured.text,
+        cards: featuredCards,
+        cta: t.featured.cta,
+        moreHref: localizePath("/ready-properties", locale),
+        moreLabel: t.featured.moreOptions || (locale === "fa" ? "Ù…Ø´Ø§Ù‡Ø¯Ù‡ ÙØ±ØµØªâ€ŒÙ‡Ø§ÛŒ Ø¨ÛŒØ´ØªØ± â†" : "Explore More Opportunities â†’")
+      }}
+      projects={{
+        eyebrow: t.projects.eyebrow,
+        title: t.projects.title,
+        text: t.projects.text,
+        cards: projectCards,
+        moreHref: localizePath("/off-plan-projects", locale),
+        moreLabel: t.projects.moreOptions
+      }}
+      areas={{
+        eyebrow: t.areas.eyebrow,
+        title: t.areas.title,
+        text: t.areas.text,
+        cards: primeAreaCards
+      }}
+      advisory={{
+        headingLines: t.advisory.headingLines,
+        intro: t.advisory.text,
+        servicesTitle: t.advisory.servicesTitle,
+        bullets: t.advisory.bullets,
+        cta: t.advisory.cta,
+        photoSrc: "/ali-photo.png",
+        photoAlt: "Ali Taghavi"
+      }}
+      partnership={{
+        eyebrow: t.partnership.eyebrow,
+        title: t.partnership.title,
+        text: t.partnership.text,
+        href: localizePath("/negin", locale),
+        link: t.partnership.link
+      }}
+      testimonials={t.testimonials}
+      contact={{
+        eyebrow: t.contact.eyebrow,
+        title: t.contact.title,
+        text: t.contact.intro,
+        values: formData,
+        onChange: handleChange,
+        onSubmit: handleSubmit,
+        infoTitle: t.contact.infoTitle,
+        connectTitle: t.contact.connectTitle,
+        addressTitle: t.contact.addressTitle,
+        address: t.contact.address,
+        phoneTitle: t.contact.phoneTitle,
+        phone: "+971 52 295 0316",
+        whatsapp: t.contact.whatsapp,
+        instagram: t.contact.instagram,
+        youtube: t.contact.youtube || (locale === "fa" ? "ØªÙ…Ø§Ø´Ø§ Ø¯Ø± ÛŒÙˆØªÛŒÙˆØ¨" : "Watch on YouTube"),
+        submit: t.contact.submit,
+        labels: t.contact.formLabels,
+        placeholders: t.contact.placeholders,
+        purposes: t.contact.purposes,
+        whatsappHref: `https://wa.me/${whatsappNumber}`,
+        instagramHref: instagramUrl,
+        youtubeHref: youtubeUrl
+      }}
+      floatingWhatsappHref={`https://wa.me/${whatsappNumber}`}
+      floatingWhatsappLabel="Open WhatsApp chat with Ali Taghavi"
+    />
+  );
 
   return (
     <main className={`luxury-page ${locale === "fa" ? "rtl" : ""}`}>

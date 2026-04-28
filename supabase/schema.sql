@@ -289,3 +289,64 @@ alter table public.leads
 
 create index if not exists leads_owner_idx on public.leads(owner);
 create index if not exists leads_created_at_idx on public.leads(created_at desc);
+
+create table if not exists public.blog_posts (
+  id text primary key,
+  title_en text not null,
+  title_fa text,
+  slug text not null unique,
+  excerpt_en text,
+  excerpt_fa text,
+  content_en text,
+  content_fa text,
+  cover_image_url text,
+  category text,
+  author text,
+  status text not null default 'draft',
+  published_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.blog_posts
+  add column if not exists title_en text,
+  add column if not exists title_fa text,
+  add column if not exists slug text,
+  add column if not exists excerpt_en text,
+  add column if not exists excerpt_fa text,
+  add column if not exists content_en text,
+  add column if not exists content_fa text,
+  add column if not exists cover_image_url text,
+  add column if not exists category text,
+  add column if not exists author text,
+  add column if not exists status text not null default 'draft',
+  add column if not exists published_at timestamptz,
+  add column if not exists created_at timestamptz not null default now(),
+  add column if not exists updated_at timestamptz not null default now();
+
+create unique index if not exists blog_posts_slug_idx on public.blog_posts(slug);
+create index if not exists blog_posts_status_idx on public.blog_posts(status);
+create index if not exists blog_posts_published_at_idx on public.blog_posts(published_at desc);
+
+drop trigger if exists trg_blog_posts_updated_at on public.blog_posts;
+create trigger trg_blog_posts_updated_at
+before update on public.blog_posts
+for each row
+execute function public.set_updated_at();
+
+alter table public.blog_posts enable row level security;
+
+drop policy if exists "blog_posts_public_read_published" on public.blog_posts;
+create policy "blog_posts_public_read_published"
+on public.blog_posts
+for select
+to anon, authenticated
+using (status = 'published');
+
+drop policy if exists "blog_posts_authenticated_manage" on public.blog_posts;
+create policy "blog_posts_authenticated_manage"
+on public.blog_posts
+for all
+to authenticated
+using (true)
+with check (true);

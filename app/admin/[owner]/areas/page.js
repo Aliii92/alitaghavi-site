@@ -469,12 +469,15 @@ export default function AdminAreasPage() {
             <a className="button secondary-button" href={`${basePath}/resale-off-plan`}>
               Resale Off-Plan
             </a>
-            <a className="button secondary-button" href={`${basePath}/projects`}>
-              Projects
-            </a>
-            <a className="button secondary-button" href={`${basePath}/leads`}>
-              Leads
-            </a>
+              <a className="button secondary-button" href={`${basePath}/projects`}>
+                Projects
+              </a>
+              <a className="button secondary-button" href="/admin/blog">
+                Blog
+              </a>
+              <a className="button secondary-button" href={`${basePath}/leads`}>
+                Leads
+              </a>
             <a className="button secondary-button" href="/">
               View Site
             </a>

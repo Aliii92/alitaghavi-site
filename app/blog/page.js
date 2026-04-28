@@ -1,5 +1,5 @@
 import ResponsiveNavbar from "../../components/ResponsiveNavbar";
-import { getAllBlogPosts } from "../../lib/blog";
+import { BLOG_PLACEHOLDER, getAllBlogPosts } from "../../lib/blog";
 import { localizePath } from "../../lib/locale";
 import { getRequestLocale } from "../../lib/server-locale";
 
@@ -57,7 +57,7 @@ function navLinks(locale = "en") {
 
 export default async function BlogIndexPage() {
   const locale = await getRequestLocale();
-  const posts = getAllBlogPosts(locale);
+  const posts = await getAllBlogPosts(locale, { publishedOnly: true });
   const copy = locale === "fa"
     ? {
         brand: "املاک لوکس دبی",
@@ -96,7 +96,7 @@ export default async function BlogIndexPage() {
           <div className="three-column-grid blog-grid">
             {posts.map((post) => (
               <a className="listing-card blog-card" href={localizePath(`/blog/${post.slug}`, locale)} key={post.slug}>
-                <img className="listing-image blog-card-image" src={post.coverImage} alt={post.title} loading="lazy" />
+                <img className="listing-image blog-card-image" src={post.coverImage || BLOG_PLACEHOLDER} alt={post.title} loading="lazy" />
                 <div className="listing-content">
                   <span className="listing-label">{post.category}</span>
                   <span className="blog-meta-line">{formatBlogDate(post.date, locale)} · {post.author}</span>

@@ -12,9 +12,11 @@ export default function AdminLandingPage() {
           <a className="button secondary-button" href="/admin/negin">
             Negin Admin
           </a>
+          <a className="button secondary-button" href="/admin/blog">
+            Blog
+          </a>
         </div>
       </section>
     </main>
   );
 }
-
