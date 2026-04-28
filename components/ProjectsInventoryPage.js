@@ -20,14 +20,14 @@ function NavBar({ owner = "ali", locale = "en" }) {
   const homeHref = localizePath(owner === "negin" ? "/negin" : "/", locale);
   const copy = locale === "fa"
     ? {
-        brand: "املاک لوکس دبی",
-        ready: "املاک آماده",
-        projects: "پروژه‌های آف‌پلن",
-        resale: "ری‌سیل آف‌پلن",
-        areas: "مناطق برتر",
-        contact: "ارتباط",
-        about: "درباره من",
-        otherAdvisor: owner === "ali" ? "نگین محمدی" : "علی تقوی"
+        brand: "Ø§Ù…Ù„Ø§Ú© Ù„ÙˆÚ©Ø³ Ø¯Ø¨ÛŒ",
+        ready: "Ø§Ù…Ù„Ø§Ú© Ø¢Ù…Ø§Ø¯Ù‡",
+        projects: "Ù¾Ø±ÙˆÚ˜Ù‡â€ŒÙ‡Ø§ÛŒ Ø¢Ùâ€ŒÙ¾Ù„Ù†",
+        resale: "Ø±ÛŒâ€ŒØ³ÛŒÙ„ Ø¢Ùâ€ŒÙ¾Ù„Ù†",
+        areas: "Ù…Ù†Ø§Ø·Ù‚ Ø¨Ø±ØªØ±",
+        contact: "Ø§Ø±ØªØ¨Ø§Ø·",
+        about: "Ø¯Ø±Ø¨Ø§Ø±Ù‡ Ù…Ù†",
+        otherAdvisor: owner === "ali" ? "Ù†Ú¯ÛŒÙ† Ù…Ø­Ù…Ø¯ÛŒ" : "Ø¹Ù„ÛŒ ØªÙ‚ÙˆÛŒ"
       }
     : {
         brand: "Dubai Luxury Properties",
@@ -58,7 +58,7 @@ function NavBar({ owner = "ali", locale = "en" }) {
   );
 }
 
-function ProjectListingCard({ project, contextOwner = "ali" }) {
+function ProjectListingCard({ project, contextOwner = "ali", locale = "en" }) {
   const propertyPayload = projectToProperty(project);
   const advisorLabel = contextOwner === "negin" ? "Negin" : "Ali";
   const phoneNumber = contextOwner === "negin" ? "971505996547" : "971522950316";
@@ -67,19 +67,20 @@ function ProjectListingCard({ project, contextOwner = "ali" }) {
     property: propertyPayload,
     advisor: advisorLabel,
     advisorOwner: contextOwner,
-    locale: "en",
+    locale,
     phoneNumber
   });
   const lead = buildLeadPayload({
     property: propertyPayload,
     advisor: advisorLabel,
     advisorOwner: contextOwner,
-    locale: "en",
+    locale,
     phoneNumber,
     sourcePage
   });
-  const displayPrice = formatPriceDisplay(project.startingPrice);
+  const displayPrice = formatPriceDisplay(project.startingPrice, locale);
   const imageSrc = resolveProjectImage(project);
+  const isFa = locale === "fa";
 
   if (process.env.NODE_ENV !== "production") {
     console.log("[off-plan-project-card]", project);
@@ -93,17 +94,17 @@ function ProjectListingCard({ project, contextOwner = "ali" }) {
         alt={project.title || "Off-plan project"}
       />
       <div className="listing-content">
-        <span className="listing-label">{project.handoverDate || "Off-Plan"}</span>
-        <span className="listing-badge">{project.developer}</span>
-        <h3>{project.title}</h3>
-        <p className="listing-description">{[project.area, project.subArea].filter(Boolean).join(" / ")}</p>
-        <p className="compact-listing-detail">{project.description}</p>
+        <span className="listing-label">{project.handoverDate || (isFa ? "آف پلن" : "Off-Plan")}</span>
+        <span className="listing-badge">{project.developer || (isFa ? "توسعه‌دهنده" : "Developer")}</span>
+        <h3>{project.title || (isFa ? "پروژه بدون عنوان" : "Untitled project")}</h3>
+        <p className="listing-description">{[project.area, project.subArea].filter(Boolean).join(" / ") || (isFa ? "منطقه مشخص نشده" : "Area not specified")}</p>
+        <p className="compact-listing-detail">{project.description || (isFa ? "جزئیات پروژه به‌زودی تکمیل می‌شود." : "Project details will be completed soon.")}</p>
         <div className="price-row">
-          <span>Starting Price</span>
+          <span>{isFa ? "شروع قیمت" : "Starting Price"}</span>
           <strong>{displayPrice}</strong>
         </div>
         <LeadWhatsAppButton className="button whatsapp-button" href={whatsappHref} lead={lead}>
-          Request Project Details
+          {isFa ? "دریافت جزئیات پروژه" : "Request Project Details"}
         </LeadWhatsAppButton>
       </div>
     </article>
@@ -114,12 +115,25 @@ export default async function ProjectsInventoryPage({ searchParams, owner = "ali
   const locale = await getRequestLocale();
   const params = await searchParams;
   const hasSearch = searchKeys.some((key) => params?.[key]);
+  const isFa = locale === "fa";
   console.log("[ProjectsInventoryPage] Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL || "(missing)");
   console.log("[ProjectsInventoryPage] Supabase anon key exists:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-  const projects = await readProjects();
-  const projectProperties = projects.map(projectToProperty);
-  const searchableInventory = [...(await readProperties()), ...projectProperties];
-  console.log("[ProjectsInventoryPage] projects fetched:", projects.length);
+
+  let projects = [];
+  let searchableInventory = [];
+  let loadError = "";
+
+  try {
+    projects = await readProjects({ allowFallback: false });
+    const projectProperties = projects.map(projectToProperty);
+    const publicProperties = await readProperties({ allowFallback: false, inventoryType: "all" });
+    searchableInventory = [...publicProperties, ...projectProperties];
+    console.log("[ProjectsInventoryPage] projects fetched:", projects.length);
+  } catch (error) {
+    console.error("[ProjectsInventoryPage] failed to load live inventory:", error);
+    loadError = error?.message || "Could not load off-plan projects right now.";
+  }
+
   const phoneNumber = owner === "negin" ? "971505996547" : "971522950316";
   const homeHref = owner === "negin" ? "/negin" : "/";
   const projectsHref = offPlanProjectsPathFor(owner);
@@ -131,47 +145,54 @@ export default async function ProjectsInventoryPage({ searchParams, owner = "ali
       <div className="content-shell listings-page-shell">
         <section className="section listings-intro-section">
           <div className="section-header centered listings-page-header">
-            <p className="section-eyebrow">{locale === "fa" ? "پروژه‌های آف‌پلن لوکس" : "Luxury Off-Plan Projects"}</p>
-            <h1>{locale === "fa" ? "پروژه‌های آف‌پلن بیشتر را بررسی کنید" : "Explore More Off-Plan Projects"}</h1>
+            <p className="section-eyebrow">{isFa ? "Ù¾Ø±ÙˆÚ˜Ù‡â€ŒÙ‡Ø§ÛŒ Ø¢Ùâ€ŒÙ¾Ù„Ù† Ù„ÙˆÚ©Ø³" : "Luxury Off-Plan Projects"}</p>
+            <h1>{isFa ? "Ù¾Ø±ÙˆÚ˜Ù‡â€ŒÙ‡Ø§ÛŒ Ø¢Ùâ€ŒÙ¾Ù„Ù† Ø¨ÛŒØ´ØªØ± Ø±Ø§ Ø¨Ø±Ø±Ø³ÛŒ Ú©Ù†ÛŒØ¯" : "Explore More Off-Plan Projects"}</h1>
             <p className="section-text">
-              {locale === "fa"
-                ? "منتخبی از فرصت‌های پریمیوم آف‌پلن در مناطق برندد، واترفرانت و رو به رشد دبی."
+              {isFa
+                ? "Ù…Ù†ØªØ®Ø¨ÛŒ Ø§Ø² ÙØ±ØµØªâ€ŒÙ‡Ø§ÛŒ Ù¾Ø±ÛŒÙ…ÛŒÙˆÙ… Ø¢Ùâ€ŒÙ¾Ù„Ù† Ø¯Ø± Ù…Ù†Ø§Ø·Ù‚ Ø¨Ø±Ù†Ø¯Ø¯ØŒ ÙˆØ§ØªØ±ÙØ±Ø§Ù†Øª Ùˆ Ø±Ùˆ Ø¨Ù‡ Ø±Ø´Ø¯ Ø¯Ø¨ÛŒ."
                 : "A curated selection of premium off-plan opportunities across Dubai's branded, waterfront, and high-growth locations."}
             </p>
             <a className="back-to-listings-link" href={homeHref}>
-              {locale === "fa" ? "بازگشت به پروژه‌های صفحه اصلی" : "Back to homepage projects"}
+              {isFa ? "Ø¨Ø§Ø²Ú¯Ø´Øª Ø¨Ù‡ Ù¾Ø±ÙˆÚ˜Ù‡â€ŒÙ‡Ø§ÛŒ ØµÙØ­Ù‡ Ø§ØµÙ„ÛŒ" : "Back to homepage projects"}
             </a>
           </div>
         </section>
 
         <section className="section listing-group">
-          <AreaPropertyFilters
-            properties={searchableInventory}
-            areaName="Dubai"
-            sourcePage={owner === "negin" ? "Negin Off-Plan Projects Search" : "Ali Off-Plan Projects Search"}
-            redirectBase={projectsHref}
-            redirectBaseByCategory={{
-              all: owner === "negin" ? "/negin/listings" : "/listings",
-              ready: readyPropertiesPathFor(owner),
-              "off-plan": offPlanProjectsPathFor(owner),
-              "resale-off-plan": resaleOffPlanPathFor(owner)
-            }}
-            mode={hasSearch ? "results" : "redirect"}
-            defaultCategory="off-plan"
-            intro={locale === "fa" ? "پروژه‌های آف‌پلن را بر اساس منطقه، توسعه‌دهنده، تعداد خواب، بودجه و زمان تحویل جست‌وجو کنید." : "Search off-plan projects by area, developer, bedroom mix, budget, and handover date."}
-            locale={locale}
-          />
+          {!loadError ? (
+            <AreaPropertyFilters
+              properties={searchableInventory}
+              areaName="Dubai"
+              sourcePage={owner === "negin" ? "Negin Off-Plan Projects Search" : "Ali Off-Plan Projects Search"}
+              redirectBase={projectsHref}
+              redirectBaseByCategory={{
+                all: owner === "negin" ? "/negin/listings" : "/listings",
+                ready: readyPropertiesPathFor(owner),
+                "off-plan": offPlanProjectsPathFor(owner),
+                "resale-off-plan": resaleOffPlanPathFor(owner)
+              }}
+              mode={hasSearch ? "results" : "redirect"}
+              defaultCategory="off-plan"
+              intro={isFa ? "Ù¾Ø±ÙˆÚ˜Ù‡â€ŒÙ‡Ø§ÛŒ Ø¢Ùâ€ŒÙ¾Ù„Ù† Ø±Ø§ Ø¨Ø± Ø§Ø³Ø§Ø³ Ù…Ù†Ø·Ù‚Ù‡ØŒ ØªÙˆØ³Ø¹Ù‡â€ŒØ¯Ù‡Ù†Ø¯Ù‡ØŒ ØªØ¹Ø¯Ø§Ø¯ Ø®ÙˆØ§Ø¨ØŒ Ø¨ÙˆØ¯Ø¬Ù‡ Ùˆ Ø²Ù…Ø§Ù† ØªØ­ÙˆÛŒÙ„ Ø¬Ø³Øªâ€ŒÙˆØ¬Ùˆ Ú©Ù†ÛŒØ¯." : "Search off-plan projects by area, developer, bedroom mix, budget, and handover date."}
+              locale={locale}
+            />
+          ) : null}
 
-          {!hasSearch && projects.length ? (
+          {loadError ? (
+            <article className="contact-card empty-listings-card">
+              <h3>{isFa ? "Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ù¾Ø±ÙˆÚ˜Ù‡â€ŒÙ‡Ø§ Ø¨Ø§ Ù…Ø´Ú©Ù„ Ù…ÙˆØ§Ø¬Ù‡ Ø´Ø¯" : "Could not load projects right now"}</h3>
+              <p>{loadError}</p>
+            </article>
+          ) : !hasSearch && projects.length ? (
             <div className="three-column-grid all-listings-grid">
               {projects.map((project) => (
-                <ProjectListingCard key={project.id} project={project} contextOwner={owner} />
+                <ProjectListingCard key={project.id} project={project} contextOwner={owner} locale={locale} />
               ))}
             </div>
           ) : !hasSearch ? (
             <article className="contact-card empty-listings-card">
-              <h3>{locale === "fa" ? "فرصت‌های آف‌پلن منتخب به‌زودی اضافه می‌شوند" : "Curated off-plan opportunities coming soon"}</h3>
-              <p>{locale === "fa" ? "پروژه‌های آف‌پلن جدید از داشبورد ادمین اضافه می‌شوند و به‌صورت خودکار اینجا نمایش داده خواهند شد." : "New off-plan projects can be added from the admin dashboard and will appear here automatically."}</p>
+              <h3>{isFa ? "ÙØ±ØµØªâ€ŒÙ‡Ø§ÛŒ Ø¢Ùâ€ŒÙ¾Ù„Ù† Ù…Ù†ØªØ®Ø¨ Ø¨Ù‡â€ŒØ²ÙˆØ¯ÛŒ Ø§Ø¶Ø§ÙÙ‡ Ù…ÛŒâ€ŒØ´ÙˆÙ†Ø¯" : "Curated off-plan opportunities coming soon"}</h3>
+              <p>{isFa ? "Ù¾Ø±ÙˆÚ˜Ù‡â€ŒÙ‡Ø§ÛŒ Ø¢Ùâ€ŒÙ¾Ù„Ù† Ø¬Ø¯ÛŒØ¯ Ø§Ø² Ø¯Ø§Ø´Ø¨ÙˆØ±Ø¯ Ø§Ø¯Ù…ÛŒÙ† Ø§Ø¶Ø§ÙÙ‡ Ù…ÛŒâ€ŒØ´ÙˆÙ†Ø¯ Ùˆ Ø¨Ù‡â€ŒØµÙˆØ±Øª Ø®ÙˆØ¯Ú©Ø§Ø± Ø§ÛŒÙ†Ø¬Ø§ Ù†Ù…Ø§ÛŒØ´ Ø¯Ø§Ø¯Ù‡ Ø®ÙˆØ§Ù‡Ù†Ø¯ Ø´Ø¯." : "New off-plan projects can be added from the admin dashboard and will appear here automatically."}</p>
             </article>
           ) : null}
         </section>

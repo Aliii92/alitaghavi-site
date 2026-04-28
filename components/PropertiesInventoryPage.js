@@ -246,6 +246,7 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
   console.log("[PropertiesInventoryPage] inventory type:", inventoryType);
   let baseProperties = [];
   let propertySource = "supabase";
+  let loadError = "";
 
   try {
     baseProperties = await readProperties({
@@ -253,15 +254,18 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
       inventoryType: inventoryType === "all" ? "all" : inventoryType
     });
   } catch (error) {
-    console.warn(`[public-properties:${inventoryType}] Supabase unavailable, falling back to local JSON:`, error.message || error);
-    baseProperties = await readProperties({
-      allowFallback: true,
-      inventoryType: inventoryType === "all" ? "all" : inventoryType
-    });
-    propertySource = "local-fallback";
+    console.error(`[public-properties:${inventoryType}] failed to load live properties:`, error);
+    propertySource = "supabase-error";
+    loadError = error?.message || "Could not load live properties right now.";
   }
 
-  const projectProperties = (await readProjects()).map(projectToProperty);
+  let projectProperties = [];
+  try {
+    projectProperties = (await readProjects({ allowFallback: false })).map(projectToProperty);
+  } catch (error) {
+    console.error("[PropertiesInventoryPage] failed to load projects for shared search:", error);
+  }
+
   const searchableInventory = [...baseProperties, ...projectProperties];
   const properties = filterPropertiesByInventory(baseProperties, inventoryType);
   const regionEligibleProperties = properties.filter((property) =>
@@ -356,30 +360,37 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
         </section>
 
         <section className="section ready-search-section">
-          <AreaPropertyFilters
-            properties={searchableInventory}
-            areaName="Dubai"
-            advisorName={owner === "negin" ? "Negin Mohamadi" : "Ali Taghavi"}
-            phoneNumber={owner === "negin" ? "971505996547" : "971522950316"}
-            owner={owner}
-            sourcePage={`${owner === "negin" ? "Negin" : "Ali"} ${config.eyebrow} Search`}
-            redirectBase={overviewBasePath}
-            redirectBaseByCategory={{
-              all: owner === "negin" ? "/negin/listings" : "/listings",
-              ready: readyPropertiesPathFor(owner),
-              "off-plan": offPlanProjectsPathFor(owner),
-              "resale-off-plan": resaleOffPlanPathFor(owner)
-            }}
-            defaultCategory={config.category}
-            showResults={hasSearch}
-            intro={config.intro}
-            locale={locale}
-          />
+          {!loadError ? (
+            <AreaPropertyFilters
+              properties={searchableInventory}
+              areaName="Dubai"
+              advisorName={owner === "negin" ? "Negin Mohamadi" : "Ali Taghavi"}
+              phoneNumber={owner === "negin" ? "971505996547" : "971522950316"}
+              owner={owner}
+              sourcePage={`${owner === "negin" ? "Negin" : "Ali"} ${config.eyebrow} Search`}
+              redirectBase={overviewBasePath}
+              redirectBaseByCategory={{
+                all: owner === "negin" ? "/negin/listings" : "/listings",
+                ready: readyPropertiesPathFor(owner),
+                "off-plan": offPlanProjectsPathFor(owner),
+                "resale-off-plan": resaleOffPlanPathFor(owner)
+              }}
+              defaultCategory={config.category}
+              showResults={hasSearch}
+              intro={config.intro}
+              locale={locale}
+            />
+          ) : (
+            <article className="contact-card empty-listings-card">
+              <h3>{locale === "fa" ? "بارگذاری فایل املاک با مشکل مواجه شد" : "Could not load listings right now"}</h3>
+              <p>{loadError}</p>
+            </article>
+          )}
         </section>
 
-        {hasSearch ? null : (
+        {hasSearch || loadError ? null : (
           <section className="section listings-area-section">
-            {inventoryType === "ready" || inventoryType === "resale-off-plan" ? (
+            {inventoryType === "ready" || inventoryType === "resale-off-plan" || inventoryType === "all" ? (
               <RegionGroupedListings
                 properties={regionEligibleProperties}
                 areaName="Dubai"
@@ -390,6 +401,8 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
                 locale={locale}
                 minimumProperties={3}
                 initialVisible={3}
+                viewMoreMode={inventoryType === "ready" ? "link" : "expand"}
+                areaBasePath={areaBasePath}
               />
             ) : (
             <div className="three-column-grid listings-area-grid">

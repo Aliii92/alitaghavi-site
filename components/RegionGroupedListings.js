@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import AreaPropertyCard from "./AreaPropertyCard";
-import { getImageSrc } from "../lib/get-image-src.js";
 
 const copyByLocale = {
   en: {
@@ -50,7 +49,9 @@ export default function RegionGroupedListings({
   owner = "ali",
   locale = "en",
   minimumProperties = 3,
-  initialVisible = 3
+  initialVisible = 3,
+  viewMoreMode = "expand",
+  areaBasePath = "/areas"
 }) {
   const copy = copyByLocale[locale === "fa" ? "fa" : "en"];
   const [expandedRegions, setExpandedRegions] = useState({});
@@ -66,8 +67,7 @@ export default function RegionGroupedListings({
         byRegion.set(slug, {
           slug,
           name,
-          items: [],
-          imageSrc: getImageSrc(property, "/dubai-hero.png")
+          items: []
         });
       }
 
@@ -93,14 +93,17 @@ export default function RegionGroupedListings({
         const expanded = Boolean(expandedRegions[group.slug]);
         const visibleItems = expanded ? group.items : group.items.slice(0, initialVisible);
         const hasMore = group.items.length > initialVisible;
+        const viewMoreHref = `${areaBasePath}/${group.slug}`;
+        const viewMoreLabel =
+          locale === "fa"
+            ? `مشاهده همه املاک ${group.name}`
+            : `View all properties in ${group.name}`;
 
         return (
           <section className="building-listing-group region-listing-group" id={`region-${group.slug}`} key={group.slug}>
             <div
               className="building-group-header region-group-header"
-              style={{ backgroundImage: `linear-gradient(135deg, rgba(9, 15, 25, 0.84), rgba(9, 15, 25, 0.58)), url("${group.imageSrc}")` }}
             >
-              <p className="section-eyebrow">{copy.label}</p>
               <h3>{group.name}</h3>
               <span>{copy.propertiesAvailable(group.items.length)}</span>
             </div>
@@ -120,7 +123,7 @@ export default function RegionGroupedListings({
               ))}
             </div>
 
-            {hasMore ? (
+            {hasMore && viewMoreMode === "expand" ? (
               <div className="more-units-row">
                 <button
                   type="button"
@@ -134,6 +137,14 @@ export default function RegionGroupedListings({
                 >
                   {expanded ? copy.showLess : copy.viewMore}
                 </button>
+              </div>
+            ) : null}
+
+            {hasMore && viewMoreMode === "link" ? (
+              <div className="more-units-row">
+                <a className="button secondary-button more-units-button" href={viewMoreHref}>
+                  {viewMoreLabel}
+                </a>
               </div>
             ) : null}
           </section>

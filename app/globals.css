@@ -1829,21 +1829,33 @@ button {
 }
 
 .all-listings-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
 }
 
 .compact-listing-card {
+  display: flex;
+  flex-direction: column;
   height: 100%;
   transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
 
 .compact-listing-card .listing-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   padding: 16px;
 }
 
 .compact-listing-image {
-  min-height: 150px;
+  display: block;
+  width: 100%;
+  min-height: 220px;
+  height: 220px;
+  object-fit: cover;
+  background: linear-gradient(135deg, #10273d 0%, #2c5b86 100%);
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
 }
 
 .compact-listing-card h3 {
@@ -1880,6 +1892,7 @@ button {
 
 .compact-listing-card .price-row {
   margin-top: 10px;
+  margin-top: auto;
   padding-top: 10px;
 }
 
@@ -1890,10 +1903,48 @@ button {
   font-size: 0.9rem;
 }
 
+.region-grouped-listings {
+  width: min(1240px, 100%);
+  max-width: 100%;
+  margin: 0 auto;
+  gap: 36px;
+}
+
+.region-listing-group {
+  gap: 24px;
+}
+
+.region-group-header {
+  max-width: none;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+}
+
+.region-group-header h3 {
+  color: var(--navy-900);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+  text-shadow: none;
+}
+
+.region-group-header span {
+  font-weight: 700;
+  color: var(--muted);
+  text-shadow: none;
+}
+
 .compact-card-topline {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 8px;
   margin-bottom: 8px;
 }
@@ -1904,8 +1955,14 @@ button {
 }
 
 .compact-card-topline .listing-badge {
+  display: block;
+  width: 100%;
   overflow: hidden;
-  text-align: right;
+  color: var(--navy-800);
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1913,6 +1970,13 @@ button {
 .compact-listing-card .listing-label {
   padding: 5px 8px;
   font-size: 0.58rem;
+}
+
+.compact-status-line {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
 }
 
 .property-spec-line {
@@ -2681,13 +2745,16 @@ button {
 
   .three-column-grid,
   .projects-grid,
-  .all-listings-grid,
   .contact-sidecards,
   .area-card,
   .prime-area-hero-card,
   .prime-area-insight-grid,
   .prime-area-article-layout {
     grid-template-columns: 1fr;
+  }
+
+  .all-listings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .prime-area-sidebar {
@@ -2853,7 +2920,8 @@ button {
   .admin-lead-row,
   .admin-image-uploader,
   .area-filter-panel,
-  .property-search-panel {
+  .property-search-panel,
+  .all-listings-grid {
     grid-template-columns: 1fr;
   }
 

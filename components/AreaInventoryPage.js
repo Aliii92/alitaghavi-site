@@ -5,7 +5,7 @@ import {
   isReadyProperty,
   isResaleOffPlanProperty,
   isPubliclyVisibleProperty,
-  normalizeProperty
+  readProperties
 } from "../lib/properties.js";
 import {
   offPlanProjectsPathFor,
@@ -156,10 +156,14 @@ function propertyMatchesArea(property, areaSlug, inventoryType) {
   if (!target) return false;
 
   if (inventoryType === "resale-off-plan") {
-    return resaleAreaFields.some((field) => normalizeAreaValue(property?.[field]) === target);
+    return resaleAreaFields.some((field) => {
+      const candidate = normalizeAreaValue(property?.[field]);
+      return candidate === target || candidate.includes(target) || target.includes(candidate);
+    });
   }
 
-  return normalizeAreaValue(property?.area) === target;
+  const candidate = normalizeAreaValue(property?.area);
+  return candidate === target || candidate.includes(target) || target.includes(candidate);
 }
 
 function uniqueAreaDebugValues(rows, inventoryType) {
@@ -201,10 +205,19 @@ async function fetchPropertiesByAreaSlug(areaSlug, inventoryType = "ready") {
 
   try {
     const tableName = tableNameForInventoryType(inventoryType);
-    const data = await supabaseSelect(tableName, { order: "id.asc" });
-    const rows = Array.isArray(data) ? data : [];
-    const areaListings = rows.filter((property) => propertyMatchesArea(property, areaSlug, inventoryType));
-    return { data: rows, areaListings, error: null, tableName, uniqueValues: uniqueAreaDebugValues(rows, inventoryType) };
+    const rows = await readProperties({
+      allowFallback: false,
+      inventoryType: inventoryType === "resale-off-plan" ? "resale-off-plan" : "ready"
+    });
+    const normalizedRows = Array.isArray(rows) ? rows : [];
+    const areaListings = normalizedRows.filter((property) => propertyMatchesArea(property, areaSlug, inventoryType));
+    return {
+      data: normalizedRows,
+      areaListings,
+      error: null,
+      tableName,
+      uniqueValues: uniqueAreaDebugValues(normalizedRows, inventoryType)
+    };
   } catch (error) {
     return { data: null, areaListings: [], error, tableName: tableNameForInventoryType(inventoryType), uniqueValues: [] };
   }
@@ -286,12 +299,11 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
     }
 
     if (areaSlug === "other-areas") {
-      const allRows = await supabaseSelect(tableNameForInventoryType(inventoryType), { order: "id.asc" });
-      const allProperties = filterAreaProperties((Array.isArray(allRows) ? allRows : []).map((row) => normalizeProperty({
-        ...row,
-        category: row?.category || row?.inventory_type || (inventoryType === "resale-off-plan" ? "resale-off-plan" : "ready"),
-        inventory_type: row?.inventory_type || row?.category || (inventoryType === "resale-off-plan" ? "Resale Off-Plan" : "Ready")
-      }, row?.id)), inventoryType);
+      const allRows = await readProperties({
+        allowFallback: false,
+        inventoryType: inventoryType === "resale-off-plan" ? "resale-off-plan" : "ready"
+      });
+      const allProperties = filterAreaProperties(Array.isArray(allRows) ? allRows : [], inventoryType);
       const promotedNames = promotedAreaNames(allProperties);
       const areaProperties = allProperties.filter((property) => {
         const propertyAreaName = String(property?.area || "").trim() || "Other Areas";
@@ -367,17 +379,7 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
       console.error(`[public-area:${areaSlug}] Supabase error:`, error);
     }
 
-    const normalizedRows = (Array.isArray(areaListings) ? areaListings : []).map((row) =>
-      normalizeProperty(
-        {
-          ...row,
-          category: row?.category || row?.inventory_type || (inventoryType === "resale-off-plan" ? "resale-off-plan" : "ready"),
-          inventory_type: row?.inventory_type || row?.category || (inventoryType === "resale-off-plan" ? "Resale Off-Plan" : "Ready")
-        },
-        row?.id
-      )
-    );
-    const areaProperties = filterAreaProperties(normalizedRows, inventoryType);
+    const areaProperties = filterAreaProperties(Array.isArray(areaListings) ? areaListings : [], inventoryType);
     console.log("Fetched properties:", Array.isArray(data) ? data.length : 0);
     console.log("Matched area listings:", areaProperties.length);
     console.log("Supabase error:", error);
