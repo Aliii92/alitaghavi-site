@@ -224,6 +224,9 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
   const params = await searchParams;
   const hasSearch = searchKeys.some((key) => params?.[key]);
   const config = inventoryCopy(locale, inventoryType);
+  console.log("[PropertiesInventoryPage] Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL || "(missing)");
+  console.log("[PropertiesInventoryPage] Supabase anon key exists:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  console.log("[PropertiesInventoryPage] inventory type:", inventoryType);
   let baseProperties = [];
   let propertySource = "supabase";
 
@@ -315,6 +318,8 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
     });
     console.log(`[public-ready-visibility-summary] total=${baseProperties.length} included=${properties.length} excluded=${baseProperties.length - properties.length} reasons=${JSON.stringify(reasonCounts)}`);
   }
+
+  console.log("[PropertiesInventoryPage] properties fetched:", baseProperties.length);
 
   return (
     <main className="luxury-page listings-page">

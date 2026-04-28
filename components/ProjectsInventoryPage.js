@@ -114,9 +114,12 @@ export default async function ProjectsInventoryPage({ searchParams, owner = "ali
   const locale = await getRequestLocale();
   const params = await searchParams;
   const hasSearch = searchKeys.some((key) => params?.[key]);
+  console.log("[ProjectsInventoryPage] Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL || "(missing)");
+  console.log("[ProjectsInventoryPage] Supabase anon key exists:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   const projects = await readProjects();
   const projectProperties = projects.map(projectToProperty);
   const searchableInventory = [...(await readProperties()), ...projectProperties];
+  console.log("[ProjectsInventoryPage] projects fetched:", projects.length);
   const phoneNumber = owner === "negin" ? "971505996547" : "971522950316";
   const homeHref = owner === "negin" ? "/negin" : "/";
   const projectsHref = offPlanProjectsPathFor(owner);
