@@ -1797,9 +1797,65 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap;
   margin: 0 0 24px;
   color: var(--muted);
   font-size: 0.94rem;
+}
+
+.property-search-meta-summary {
+  display: grid;
+  gap: 6px;
+}
+
+.property-search-active-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.property-search-active-filters span:not(:last-child)::after {
+  content: "·";
+  margin-inline-start: 10px;
+  color: rgba(99, 114, 141, 0.62);
+}
+
+.property-sort-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--navy-800);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.property-sort-control select {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--navy-900);
+  padding: 10px 14px;
+  outline: 0;
+}
+
+.property-sort-control select:focus {
+  border-color: var(--navy-600);
+  box-shadow: 0 0 0 4px rgba(29, 95, 167, 0.08);
+}
+
+.property-card-link-shell {
+  display: block;
+}
+
+.property-card-title-link {
+  color: inherit;
+}
+
+.property-card-title-link:hover {
+  color: var(--navy-700);
 }
 
 .property-search-trust {
@@ -2925,10 +2981,10 @@ button {
     grid-template-columns: 1fr;
   }
 
-  .property-search-meta {
-    align-items: flex-start;
-    flex-direction: column;
-  }
+.property-search-meta {
+  align-items: flex-start;
+  flex-direction: column;
+}
 
   .property-search-keyword {
     grid-column: auto;

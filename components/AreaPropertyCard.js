@@ -195,21 +195,28 @@ export default function AreaPropertyCard({
   const imageSrc = getPropertyImage(property);
   const categoryLabel = categoryLabelForProperty(property, copy);
   const occupancyLabel = occupancyLabelForProperty(property, copy);
+  const detailsHref = buildAreaWhatsAppUrl(property, areaName, advisor, locale);
 
   return (
     <article className="listing-card compact-listing-card">
-      <ProjectImage
-        className="listing-image compact-listing-image property-card-image"
-        src={imageSrc}
-        alt={property.title || "Property image"}
-      />
+      <a className="property-card-link-shell" href={detailsHref}>
+        <ProjectImage
+          className="listing-image compact-listing-image property-card-image"
+          src={imageSrc}
+          alt={property.title || "Property image"}
+        />
+      </a>
       <div className="listing-content">
         <div className="compact-card-topline">
           <span className="listing-label">{categoryLabel}</span>
           <span className="listing-badge">{property.building || propertyArea}</span>
           <span className="compact-status-line">{occupancyLabel}</span>
         </div>
-        <h3>{property.title}</h3>
+        <h3>
+          <a className="property-card-link-shell property-card-title-link" href={detailsHref}>
+            {property.title}
+          </a>
+        </h3>
         {specLine ? <p className="property-spec-line">{specLine}</p> : null}
         <p className="compact-listing-detail">{buildOpportunityCopy(property, areaName, locale)}</p>
         <div className="price-row">

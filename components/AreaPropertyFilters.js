@@ -43,6 +43,11 @@ const searchCopy = {
     handover: "Handover",
     anyHandover: "Any handover",
     propertiesFound: (count) => `${count} properties found`,
+    sortLabel: "Sort",
+    newest: "Newest",
+    priceLowHigh: "Price low to high",
+    priceHighLow: "Price high to low",
+    allAreas: "All areas",
     trust: ["Curated shortlists", "Private WhatsApp follow-up", "Advisor-led guidance"],
     emptyTitle: "No properties match these filters",
     emptyBody: (areaName) =>
@@ -86,6 +91,11 @@ const searchCopy = {
     handover: "زمان تحویل",
     anyHandover: "هر زمان تحویل",
     propertiesFound: (count) => `${count} ملک یافت شد`,
+    sortLabel: "مرتب‌سازی",
+    newest: "جدیدترین",
+    priceLowHigh: "قیمت از کم به زیاد",
+    priceHighLow: "قیمت از زیاد به کم",
+    allAreas: "همه مناطق",
     trust: ["گزینه‌های منتخب", "پیگیری خصوصی در واتساپ", "راهنمایی مشاوره‌ای"],
     emptyTitle: "ملکی با این فیلترها پیدا نشد",
     emptyBody: (areaName) =>
@@ -330,6 +340,7 @@ export default function AreaPropertyFilters({
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [handover, setHandover] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
   const [activeDropdown, setActiveDropdown] = useState("");
   const shouldShowResults = showResults || searchSubmitted;
   const routeMap = useMemo(
@@ -355,6 +366,7 @@ export default function AreaPropertyFilters({
     setMinPrice(params.get("min_price") || "");
     setMaxPrice(params.get("max_price") || "");
     setHandover(params.get("handover") || "all");
+    setSortBy(params.get("sort") || "newest");
   }, [defaultCategory]);
 
   const filteredProperties = useMemo(() => {
@@ -362,7 +374,7 @@ export default function AreaPropertyFilters({
     const minBudget = minPrice ? parsePrice(minPrice) : 0;
     const maxBudget = maxPrice ? parsePrice(maxPrice) : Infinity;
 
-    return properties.filter((property) => {
+    const nextProperties = properties.filter((property) => {
       if (!isPubliclyVisibleProperty(property)) {
         return false;
       }
@@ -403,7 +415,29 @@ export default function AreaPropertyFilters({
 
       return matchesBedrooms && matchesCategory && matchesPropertyType && matchesPrice && matchesHandover && matchesQuery;
     });
-  }, [bedrooms, category, handover, maxPrice, minPrice, properties, propertyType, query]);
+
+    const withIndex = nextProperties.map((property, index) => ({ property, index }));
+    withIndex.sort((left, right) => {
+      if (sortBy === "price-low") {
+        return parsePrice(left.property.price) - parsePrice(right.property.price);
+      }
+      if (sortBy === "price-high") {
+        return parsePrice(right.property.price) - parsePrice(left.property.price);
+      }
+
+      const leftDate = Date.parse(left.property.updated_at || left.property.created_at || "") || 0;
+      const rightDate = Date.parse(right.property.updated_at || right.property.created_at || "") || 0;
+      if (leftDate || rightDate) return rightDate - leftDate;
+
+      const leftId = Number(String(left.property.id || "").match(/\d+/)?.[0] || 0);
+      const rightId = Number(String(right.property.id || "").match(/\d+/)?.[0] || 0);
+      if (leftId || rightId) return rightId - leftId;
+
+      return right.index - left.index;
+    });
+
+    return withIndex.map((item) => item.property);
+  }, [bedrooms, category, handover, maxPrice, minPrice, properties, propertyType, query, sortBy]);
 
   function buildListingsUrl(overrides = {}) {
     const nextSearchInput = overrides.searchInput ?? searchInput;
@@ -422,6 +456,7 @@ export default function AreaPropertyFilters({
     if (nextMinPrice) params.set("min_price", nextMinPrice);
     if (nextMaxPrice) params.set("max_price", nextMaxPrice);
     if (["off-plan", "resale-off-plan"].includes(nextCategory) && nextHandover !== "all") params.set("handover", nextHandover);
+    if (sortBy !== "newest") params.set("sort", sortBy);
     const queryString = params.toString();
     return `${targetBase}${queryString ? `?${queryString}` : ""}`;
   }
@@ -450,6 +485,7 @@ export default function AreaPropertyFilters({
     setMinPrice("");
     setMaxPrice("");
     setHandover("all");
+    setSortBy("newest");
     setSearchSubmitted(showResults);
 
     const clearBase = routeMap[defaultCategory] || redirectBase;
@@ -468,6 +504,39 @@ export default function AreaPropertyFilters({
       navigateTo(clearBase);
     }
   }
+
+  const activeFilterParts = useMemo(() => {
+    const parts = [];
+    const propertyTypeLabel = propertyTypeOptions.find((option) => option.value === propertyType)?.label || t.anyType;
+    const priceLabel = minPrice || maxPrice ? `${minPrice || t.min} - ${maxPrice || t.max}` : t.anyPrice;
+    const areaLabel = areaName === "Dubai" ? t.allAreas : areaName;
+
+    parts.push(propertyTypeLabel);
+    parts.push(priceLabel);
+    parts.push(areaLabel);
+
+    if (bedrooms !== "all") {
+      parts.push(bedroomOptions.find((option) => option.value === bedrooms)?.label || bedrooms);
+    }
+
+    if (!hideCategory && category !== "all") {
+      parts.push(statusOptions.find((option) => option.value === category)?.label || category);
+    }
+
+    return parts.filter(Boolean);
+  }, [
+    areaName,
+    bedroomOptions,
+    bedrooms,
+    category,
+    hideCategory,
+    maxPrice,
+    minPrice,
+    propertyType,
+    propertyTypeOptions,
+    statusOptions,
+    t
+  ]);
 
   function handleCategoryChange(value) {
     const nextHandover = ["off-plan", "resale-off-plan"].includes(value) ? handover : "all";
@@ -516,7 +585,26 @@ export default function AreaPropertyFilters({
       </form>
 
       <div className="property-search-meta">
-        <span>{redirectMode || !shouldShowResults ? intro : t.propertiesFound(filteredProperties.length)}</span>
+        <div className="property-search-meta-summary">
+          <span>{redirectMode || !shouldShowResults ? intro : t.propertiesFound(filteredProperties.length)}</span>
+          {!redirectMode && shouldShowResults ? (
+            <div className="property-search-active-filters">
+              {activeFilterParts.map((part) => (
+                <span key={part}>{part}</span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        {!redirectMode && shouldShowResults ? (
+          <label className="property-sort-control">
+            <span>{t.sortLabel}</span>
+            <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+              <option value="newest">{t.newest}</option>
+              <option value="price-low">{t.priceLowHigh}</option>
+              <option value="price-high">{t.priceHighLow}</option>
+            </select>
+          </label>
+        ) : null}
       </div>
 
       {!redirectMode && shouldShowResults && (
