@@ -40,6 +40,14 @@ const primaryAreaFallbacks = {
     note: "Curated ready properties in a strategic luxury growth district."
   }
 };
+const areaCardImageMap = {
+  "palm-jumeirah": "/uploads/area-palm-jumeirah-1776780044675.png",
+  downtown: "/uploads/area-downtown-1776779379475.png",
+  bluewaters: "/uploads/area-bluewaters-1776843833834.png",
+  meydan: "/uploads/area-meydan-1776843664059.png",
+  "al-furjan": "/dubai-hero.png",
+  beachfront: "/dubai-hero.png"
+};
 
 function slugifyArea(value) {
   return String(value || "area")
@@ -66,15 +74,23 @@ function areaMetaFor(name, fallbackItems = [], fallbackNote = "") {
   const slug = slugifyArea(name);
   const fallback = primaryAreaFallbacks[slug];
   const derivedName = fallback?.name || name;
+  const image_url = getImageSrc(fallbackItems[0] || {}, areaCardImageMap[slug] || "/dubai-hero.png");
 
   return {
     slug,
     name: derivedName,
     note: fallback?.note || fallbackNote || `Curated opportunities in ${derivedName}.`,
-    image_url: "",
+    image_url,
     imageClass: "project-three",
     items: fallbackItems
   };
+}
+
+function areaCardImageSrc(group) {
+  return getImageSrc(
+    group,
+    areaCardImageMap[group?.slug] || getImageSrc(group?.items?.[0] || {}, "/dubai-hero.png")
+  );
 }
 
 function inventoryConfig(inventoryType) {
@@ -263,6 +279,7 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
         slug,
         name: fallbackName,
         note: primaryAreaFallbacks[slug]?.note || `Curated opportunities in ${fallbackName}.`,
+        image_url: getImageSrc(items[0] || {}, areaCardImageMap[slug] || "/dubai-hero.png"),
         items
       };
     })
@@ -363,7 +380,7 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
                 <a className="listing-card area-overview-card" href={`${areaBasePath}/${group.slug}`} key={group.slug}>
                   <div
                     className={`listing-image area-overview-image ${group.imageClass || ""}`}
-                    style={getImageSrc(group, "") ? { backgroundImage: `url("${getImageSrc(group, "")}")` } : undefined}
+                    style={{ backgroundImage: `url("${areaCardImageSrc(group)}")` }}
                   ></div>
                   <div className="listing-content">
                     <span className="listing-label">{locale === "fa" ? `${group.items.length} فرصت` : `${group.items.length} Opportunities`}</span>
