@@ -29,6 +29,14 @@ function slugifyArea(value) {
     .replace(/(^-|-$)/g, "");
 }
 
+function normalizeAreaValue(value) {
+  return String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/-/g, " ")
+    .replace(/\s+/g, " ");
+}
+
 function inventoryConfig(inventoryType, locale = "en") {
   const isFa = locale === "fa";
   if (inventoryType === "resale-off-plan") {
@@ -138,17 +146,17 @@ function promotedAreaNames(properties) {
   );
 }
 
-async function fetchPropertiesByAreaName(areaName) {
+async function fetchPropertiesByAreaSlug(areaSlug) {
   if (!hasSupabaseServerConfig()) return { data: null, error: new Error("Supabase server configuration is missing.") };
 
   try {
-    const data = await supabaseSelect("properties", {
-      area: `eq.${areaName}`,
-      order: "id.asc"
-    });
-    return { data: Array.isArray(data) ? data : [], error: null };
+    const data = await supabaseSelect("properties", { order: "id.asc" });
+    const properties = Array.isArray(data) ? data : [];
+    const slugArea = normalizeAreaValue(areaSlug);
+    const areaListings = properties.filter((property) => normalizeAreaValue(property?.area) === slugArea);
+    return { data: properties, areaListings, error: null };
   } catch (error) {
-    return { data: null, error };
+    return { data: null, areaListings: [], error };
   }
 }
 
@@ -272,14 +280,14 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
       );
     }
 
-    const { data, error } = await fetchPropertiesByAreaName(areaName);
+    const { data, areaListings, error } = await fetchPropertiesByAreaSlug(areaSlug);
     console.log("data:", data);
     console.log("error:", error);
     if (error) {
       console.error(`[public-area:${areaSlug}] Supabase error:`, error);
     }
 
-    const normalizedRows = (Array.isArray(data) ? data : []).map((row) =>
+    const normalizedRows = (Array.isArray(areaListings) ? areaListings : []).map((row) =>
       normalizeProperty(
         {
           ...row,
@@ -290,7 +298,9 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
       )
     );
     const areaProperties = filterAreaProperties(normalizedRows, inventoryType);
-    console.log("fetched listings count:", areaProperties.length);
+    console.log("Fetched properties:", Array.isArray(data) ? data.length : 0);
+    console.log("Matched area listings:", areaProperties.length);
+    console.log("Supabase error:", error);
 
     return (
       <main className="luxury-page listings-page">
