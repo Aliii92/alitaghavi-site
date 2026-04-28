@@ -91,7 +91,7 @@ function inventoryConfig(inventoryType, locale = "en") {
 }
 
 function filterPropertiesByInventory(properties, inventoryType) {
-  const visibleProperties = properties.filter(isPubliclyVisibleProperty);
+  const visibleProperties = Array.isArray(properties) ? properties.filter(isPubliclyVisibleProperty) : [];
   if (inventoryType === "resale-off-plan") return visibleProperties.filter(isResaleOffPlanProperty);
   return visibleProperties.filter(isReadyProperty);
 }
@@ -128,6 +128,14 @@ function resolveSelectedArea(areaSlug, areas, properties = [], inventoryType = "
       slug: existing.slug || areaSlug,
       name: derivedAreaName,
       note: derivedNote
+    };
+  }
+
+  if (propertyMatches.length || primaryAreaFallbacks[areaSlug]) {
+    return {
+      slug: areaSlug,
+      name: derivedAreaName || primaryAreaFallbacks[areaSlug]?.name || areaSlug,
+      note: derivedNote || (derivedAreaName ? `Curated opportunities in ${derivedAreaName}.` : "")
     };
   }
 
@@ -187,15 +195,34 @@ function NavBar({ owner = "ali", locale = "en" }) {
 }
 
 export async function buildAreaStaticParams(inventoryType = "ready") {
-  const properties = filterPropertiesByInventory(await readProperties(), inventoryType);
-  const promotedSlugs = [...promotedAreaNames(properties)].map(slugifyArea);
-  return [...visibleAreaSlugs, ...promotedSlugs, "other-areas"].map((area) => ({ area }));
+  try {
+    const properties = filterPropertiesByInventory(await readProperties(), inventoryType);
+    const promotedSlugs = [...promotedAreaNames(properties)].map(slugifyArea);
+    return [...visibleAreaSlugs, ...promotedSlugs, "other-areas"].map((area) => ({ area }));
+  } catch (error) {
+    console.error("[buildAreaStaticParams] Failed to load area params:", error);
+    return [...visibleAreaSlugs, "other-areas"].map((area) => ({ area }));
+  }
 }
 
 export async function buildAreaMetadata(areaSlug, owner = "ali", inventoryType = "ready") {
   const locale = await getRequestLocale();
-  const areas = (await readAreas()).filter((item) => item.owner === owner);
-  const properties = filterPropertiesByInventory(await readProperties(), inventoryType);
+  let areas = [];
+  let properties = [];
+
+  try {
+    const loadedAreas = await readAreas();
+    areas = (Array.isArray(loadedAreas) ? loadedAreas : []).filter((item) => item.owner === owner);
+  } catch (error) {
+    console.error(`[buildAreaMetadata:${areaSlug}] Failed to load areas:`, error);
+  }
+
+  try {
+    properties = filterPropertiesByInventory(await readProperties(), inventoryType);
+  } catch (error) {
+    console.error(`[buildAreaMetadata:${areaSlug}] Failed to load properties:`, error);
+  }
+
   const selectedArea = resolveSelectedArea(areaSlug, areas, properties, inventoryType);
   const sectionLabel = inventoryType === "resale-off-plan" ? (locale === "fa" ? "ری‌سیل آف‌پلن" : "Resale Off-Plan") : (locale === "fa" ? "املاک آماده" : "Ready Properties");
   const title = selectedArea ? `${selectedArea.name} ${sectionLabel}` : "Dubai Area Properties";
@@ -226,10 +253,21 @@ export async function buildAreaMetadata(areaSlug, owner = "ali", inventoryType =
 export default async function AreaInventoryPage({ params, owner = "ali", inventoryType = "ready" }) {
   const locale = await getRequestLocale();
   const { area } = await params;
+  const normalizedArea = normalizeAreaSlug(area);
   const config = inventoryConfig(inventoryType, locale);
-  const areas = (await readAreas()).filter((item) => item.owner === owner);
+  let areas = [];
+  let areaLoadError = "";
+
+  try {
+    const loadedAreas = await readAreas();
+    areas = (Array.isArray(loadedAreas) ? loadedAreas : []).filter((item) => item.owner === owner);
+  } catch (error) {
+    areaLoadError = error.message || "Unable to load area data.";
+    console.error(`[public-area:${area}] Failed to load areas:`, error);
+  }
   let readyAndResaleProperties = [];
   let propertySource = "supabase";
+  let propertyLoadError = "";
 
   try {
     readyAndResaleProperties = await readProperties({
@@ -237,15 +275,29 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
       inventoryType: inventoryType === "resale-off-plan" ? "resale-off-plan" : "ready"
     });
   } catch (error) {
+    propertyLoadError = error.message || "Unable to load properties.";
     console.warn(`[public-area:${area}] Supabase unavailable, falling back to local JSON:`, error.message || error);
-    readyAndResaleProperties = await readProperties({
-      allowFallback: true,
-      inventoryType: inventoryType === "resale-off-plan" ? "resale-off-plan" : "ready"
-    });
-    propertySource = "local-fallback";
+    try {
+      readyAndResaleProperties = await readProperties({
+        allowFallback: true,
+        inventoryType: inventoryType === "resale-off-plan" ? "resale-off-plan" : "ready"
+      });
+      propertySource = "local-fallback";
+    } catch (fallbackError) {
+      propertyLoadError = fallbackError.message || propertyLoadError;
+      console.error(`[public-area:${area}] Local fallback failed:`, fallbackError);
+      readyAndResaleProperties = [];
+      propertySource = "unavailable";
+    }
   }
 
-  const projectProperties = (await readProjects()).map(projectToProperty);
+  let projectProperties = [];
+  try {
+    const loadedProjects = await readProjects();
+    projectProperties = (Array.isArray(loadedProjects) ? loadedProjects : []).map(projectToProperty);
+  } catch (error) {
+    console.error(`[public-area:${area}] Failed to load project search inventory:`, error);
+  }
   const searchableInventory = [...readyAndResaleProperties, ...projectProperties];
   const allProperties = filterPropertiesByInventory(readyAndResaleProperties, inventoryType);
   const selectedArea = resolveSelectedArea(area, areas, allProperties, inventoryType);
@@ -263,11 +315,11 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
     ? resaleOffPlanPathFor(owner)
     : readyPropertiesPathFor(owner);
 
-  if (process.env.NODE_ENV !== "production") {
-    console.log(
-      `[public-area:${area}] source=${propertySource} totalFetched=${readyAndResaleProperties.length} afterInventoryFilter=${allProperties.length} afterAreaFilter=${areaProperties.length}`
-    );
-  }
+  console.log(
+    `[public-area:${area}] normalizedArea=${normalizedArea} source=${propertySource} totalFetched=${readyAndResaleProperties.length} afterInventoryFilter=${allProperties.length} afterAreaFilter=${areaProperties.length}`
+  );
+  if (propertyLoadError) console.error(`[public-area:${area}] Property load error:`, propertyLoadError);
+  if (areaLoadError) console.error(`[public-area:${area}] Area load error:`, areaLoadError);
 
   if (inventoryType === "ready" && process.env.NODE_ENV !== "production") {
     const reasonCounts = {};
@@ -298,7 +350,9 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
             <div className="section-header centered listings-page-header">
               <p className="section-eyebrow">{config.eyebrow}</p>
               <h1>{locale === "fa" ? "منطقه پیدا نشد" : "Area not found"}</h1>
-              <p className="section-text">{locale === "fa" ? "برای مرور لوکیشن‌های موجود به نمای کلی مناطق بازگردید." : "Return to the area overview to browse available locations."}</p>
+              <p className="section-text">
+                {areaLoadError || propertyLoadError || (locale === "fa" ? "برای مرور لوکیشن‌های موجود به نمای کلی مناطق بازگردید." : "Return to the area overview to browse available locations.")}
+              </p>
               <a className="button secondary-button back-to-listings-button" href={overviewPath}>
                 {locale === "fa" ? "بازگشت به همه مناطق" : "Back to All Areas"}
               </a>
@@ -317,7 +371,7 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
         <section className="section listings-intro-section">
           <div className="section-header centered listings-page-header">
             <p className="section-eyebrow">{config.eyebrow}</p>
-            <h1>{selectedArea.name}</h1>
+            <h1>{config.heading} {selectedArea.name}</h1>
             <p className="section-text">{selectedArea.note}</p>
             {selectedArea.notes?.length ? (
               <div className="area-note-list">
@@ -361,8 +415,8 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
             />
           ) : (
             <article className="contact-card empty-listings-card">
-              <h3>{config.emptyTitle}</h3>
-              <p>{config.emptyBody}</p>
+              <h3>{locale === "fa" ? `هنوز لیستینگی در ${selectedArea.name} موجود نیست.` : `No listings available in ${selectedArea.name} yet.`}</h3>
+              <p>{propertyLoadError || areaLoadError || config.emptyBody}</p>
             </article>
           )}
         </section>
