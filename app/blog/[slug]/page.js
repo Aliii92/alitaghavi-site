@@ -1,5 +1,6 @@
 import ResponsiveNavbar from "../../../components/ResponsiveNavbar";
 import { BLOG_PLACEHOLDER, getBlogPostBySlug, getBlogSlugs } from "../../../lib/blog";
+import { advisorForOwner } from "../../../lib/advisors";
 import { localizePath } from "../../../lib/locale";
 import { getRequestLocale } from "../../../lib/server-locale";
 
@@ -134,6 +135,38 @@ function looksLikeHtml(value = "") {
   return /<\/?[a-z][\s\S]*>/i.test(String(value || ""));
 }
 
+function resolveBlogAdvisor(author = "") {
+  const normalizedAuthor = String(author || "").toLowerCase();
+  if (normalizedAuthor.includes("negin")) {
+    return advisorForOwner("negin");
+  }
+  return advisorForOwner("ali");
+}
+
+function buildBlogWhatsAppUrl({ post, locale = "en" }) {
+  const advisor = resolveBlogAdvisor(post?.author);
+  const message =
+    locale === "fa"
+      ? [
+          `سلام ${advisor.firstName}، این مقاله را دیدم و درباره این فرصت سرمایه‌گذاری سوال دارم:`,
+          "",
+          `عنوان مقاله: ${post?.title || "-"}`,
+          `لینک مقاله: /blog/${post?.slug || ""}`,
+          "",
+          "لطفاً قیمت، موجودی و مشاوره تخصصی را برای من ارسال کنید."
+        ].join("\n")
+      : [
+          `Hello ${advisor.firstName}, I read this article and would like to know more about this opportunity:`,
+          "",
+          `Article: ${post?.title || "-"}`,
+          `Link: /blog/${post?.slug || ""}`,
+          "",
+          "Please share updated availability, pricing, and your investment guidance."
+        ].join("\n");
+
+  return `https://wa.me/${advisor.phoneNumber}?text=${encodeURIComponent(message)}`;
+}
+
 export default async function BlogArticlePage({ params }) {
   const locale = await getRequestLocale();
   const { slug } = await params;
@@ -165,6 +198,16 @@ export default async function BlogArticlePage({ params }) {
     .filter(Boolean);
   const hasHtmlContent = looksLikeHtml(content);
   const formattedDate = formatBlogDate(post.date, locale);
+  const cta = locale === "fa"
+    ? {
+        text: "اگر درباره این فرصت سرمایه‌گذاری سوال دارید، برای دریافت قیمت، موجودی و مشاوره تخصصی با ما در ارتباط باشید.",
+        button: "دریافت مشاوره رایگان"
+      }
+    : {
+        text: "Interested in this opportunity? Speak with our team for updated availability, prices, and investment guidance.",
+        button: "Get Free Consultation"
+      };
+  const whatsappHref = buildBlogWhatsAppUrl({ post, locale });
 
   return (
     <main className="luxury-page listings-page">
@@ -212,6 +255,12 @@ export default async function BlogArticlePage({ params }) {
                 )) : <p>{copy.emptyContent}</p>}
               </div>
             )}
+            <section className="blog-cta-box" dir={locale === "fa" ? "rtl" : "ltr"}>
+              <p className="blog-cta-text">{cta.text}</p>
+              <a className="button whatsapp-button blog-cta-button" href={whatsappHref}>
+                {cta.button}
+              </a>
+            </section>
           </div>
         </article>
       </div>
