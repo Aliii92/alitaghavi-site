@@ -291,7 +291,7 @@ create index if not exists leads_owner_idx on public.leads(owner);
 create index if not exists leads_created_at_idx on public.leads(created_at desc);
 
 create table if not exists public.blog_posts (
-  id text primary key,
+  id uuid primary key default gen_random_uuid(),
   title_en text not null,
   title_fa text,
   slug text not null unique,

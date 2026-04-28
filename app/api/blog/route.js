@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { deleteSingleBlogPost, readBlogPosts, sanitizeBlogPayload, upsertSingleBlogPost } from "../../../lib/blog.js";
+import {
+  createSingleBlogPost,
+  deleteSingleBlogPost,
+  readBlogPosts,
+  sanitizeBlogPayload,
+  updateSingleBlogPost
+} from "../../../lib/blog.js";
 import { hasSupabaseServerConfig } from "../../../lib/supabase-server.js";
 import { ownerFromRequest } from "../../../lib/adminAuth.js";
 
@@ -48,9 +54,9 @@ export async function POST(request) {
       return failure("Supabase server configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY.", 500);
     }
 
-    const payload = sanitizeBlogPayload(await request.json());
+    const payload = sanitizeBlogPayload(await request.json(), { includeId: false });
     console.log("[api/blog]", { table: "blog_posts", action: "create", payloadKeys: Object.keys(payload || {}) });
-    const saved = await upsertSingleBlogPost(payload);
+    const saved = await createSingleBlogPost(payload);
     revalidateBlogPaths(saved.slug);
     return success({ item: saved });
   } catch (error) {
@@ -67,9 +73,9 @@ export async function PUT(request) {
       return failure("Supabase server configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY.", 500);
     }
 
-    const payload = sanitizeBlogPayload(await request.json());
+    const payload = sanitizeBlogPayload(await request.json(), { includeId: true });
     console.log("[api/blog]", { table: "blog_posts", action: "update", payloadKeys: Object.keys(payload || {}) });
-    const saved = await upsertSingleBlogPost(payload);
+    const saved = await updateSingleBlogPost(payload);
     revalidateBlogPaths(saved.slug);
     return success({ item: saved });
   } catch (error) {

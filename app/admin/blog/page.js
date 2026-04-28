@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 const storageKeys = ["ali_admin_password", "negin_admin_password", "blog_admin_password"];
 
 const emptyPost = {
-  id: "",
   title_en: "",
   title_fa: "",
   slug: "",
@@ -109,7 +108,7 @@ export default function AdminBlogPage() {
 
   function startCreate() {
     setEditing("new");
-    setForm({ ...emptyPost, id: `blog-${Date.now()}`, author: "Ali Taghavi" });
+    setForm({ ...emptyPost, author: "Ali Taghavi" });
     setImageFile(null);
     setImagePreview("");
     setMessage("");
@@ -143,8 +142,7 @@ export default function AdminBlogPage() {
   function autoSlug() {
     setForm((current) => ({
       ...current,
-      slug: slugify(current.title_en || current.title_fa || current.id),
-      id: current.id || `blog-${Date.now()}`
+      slug: slugify(current.title_en || current.title_fa || "blog-post")
     }));
   }
 
@@ -160,7 +158,7 @@ export default function AdminBlogPage() {
     if (!imageFile) return form.cover_image_url;
     const uploadData = new FormData();
     uploadData.append("image", imageFile);
-    uploadData.append("propertyId", postId || form.id);
+    uploadData.append("propertyId", postId || form.slug || `blog-cover-${Date.now()}`);
     const response = await fetch("/api/uploads", {
       method: "POST",
       headers: { "x-admin-password": storedPassword },
@@ -177,13 +175,24 @@ export default function AdminBlogPage() {
 
     try {
       const coverImageUrl = await uploadImageIfNeeded(form.id);
+      const slug = form.slug || slugify(form.title_en || form.title_fa || "blog-post");
       const payload = {
-        ...form,
-        id: form.id || `blog-${Date.now()}`,
-        slug: form.slug || slugify(form.title_en || form.title_fa || form.id),
+        title_en: form.title_en,
+        title_fa: form.title_fa,
+        slug,
+        excerpt_en: form.excerpt_en,
+        excerpt_fa: form.excerpt_fa,
+        content_en: form.content_en,
+        content_fa: form.content_fa,
         cover_image_url: coverImageUrl,
+        category: form.category,
+        author: form.author,
+        status: form.status,
         published_at: form.status === "published" ? (form.published_at || new Date().toISOString().slice(0, 10)) : null
       };
+      if (editing !== "new" && form.id) {
+        payload.id = form.id;
+      }
       const response = await fetch("/api/blog", {
         method: editing === "new" ? "POST" : "PUT",
         headers: {
@@ -283,10 +292,6 @@ export default function AdminBlogPage() {
             </div>
 
             <form onSubmit={savePost} className="admin-property-form">
-              <label>
-                <span>ID</span>
-                <input name="id" value={form.id} onChange={handleChange} required />
-              </label>
               <label>
                 <span>Slug</span>
                 <div className="admin-inline-field">
