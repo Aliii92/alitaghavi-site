@@ -136,6 +136,7 @@ export default function AreaPropertyCard({
   const bedroomLabel = property.bedrooms ? `${property.bedrooms} ${copy.br}` : "";
   const specLine = [bedroomLabel, property.size, property.view].filter(Boolean).join(" • ");
   const displayPrice = formatPriceDisplay(property.price, { locale });
+  const imageSrc = getImageSrc(property, "/placeholder.jpg");
 
   return (
     <article className="listing-card compact-listing-card">
