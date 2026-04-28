@@ -63,6 +63,7 @@ function NavBar({ owner = "ali", locale = "en" }) {
   const readyHref = localizePath(readyPropertiesPathFor(owner), locale);
   const offPlanHref = localizePath(offPlanProjectsPathFor(owner), locale);
   const resaleHref = localizePath(resaleOffPlanPathFor(owner), locale);
+  const blogHref = localizePath("/blog", locale);
   const copy = locale === "fa"
     ? {
         brand: "املاک لوکس دبی",
@@ -89,15 +90,16 @@ function NavBar({ owner = "ali", locale = "en" }) {
     <ResponsiveNavbar
       brandLabel={copy.brand}
       brandHref={homeHref}
-      links={[
-        { href: readyHref, label: copy.ready },
-        { href: offPlanHref, label: copy.projects },
-        { href: resaleHref, label: copy.resale },
-        { href: `${owner === "negin" ? "/negin" : ""}/areas`, label: copy.areas },
-        { href: localizePath(owner === "ali" ? "/negin" : "/", locale), label: copy.otherAdvisor },
-        { href: `${homeHref}#contact`, label: copy.contact },
-        { href: `${homeHref}#advisory`, label: copy.about }
-      ]}
+        links={[
+          { href: readyHref, label: copy.ready },
+          { href: offPlanHref, label: copy.projects },
+          { href: resaleHref, label: copy.resale },
+          { href: blogHref, label: locale === "fa" ? "تحلیل بازار" : "Market Insights" },
+          { href: `${owner === "negin" ? "/negin" : ""}/areas`, label: copy.areas },
+          { href: localizePath(owner === "ali" ? "/negin" : "/", locale), label: copy.otherAdvisor },
+          { href: `${homeHref}#contact`, label: copy.contact },
+          { href: `${homeHref}#advisory`, label: copy.about }
+        ]}
       locale={locale}
     />
   );
