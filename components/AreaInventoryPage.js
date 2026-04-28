@@ -349,7 +349,7 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
               redirectBase={overviewPath}
               redirectBaseByCategory={{
                 all: owner === "negin" ? "/negin/listings" : "/listings",
-                ready: owner === "negin" ? `/negin/listings/${selectedArea.slug}` : `/listings/${selectedArea.slug}`,
+                ready: owner === "negin" ? `/negin/areas/${selectedArea.slug}` : `/areas/${selectedArea.slug}`,
                 "off-plan": offPlanProjectsPathFor(owner),
                 "resale-off-plan": resaleOffPlanPathFor(owner)
               }}

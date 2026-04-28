@@ -45,21 +45,21 @@ const content = {
           slug: "downtown",
           title: "Downtown",
           description: "Iconic city living with Burj Khalifa views, global demand, and proven rental appeal.",
-          href: "/listings/downtown",
+          href: "/areas/downtown",
           imageClass: "area-one"
         },
         {
           slug: "palm-jumeirah",
           title: "Palm Jumeirah",
           description: "Dubai's signature waterfront address for branded residences, beach homes, and rare views.",
-          href: "/listings/palm-jumeirah",
+          href: "/areas/palm-jumeirah",
           imageClass: "featured-two"
         },
         {
           slug: "meydan",
           title: "Meydan",
           description: "A strategic growth district for villas, new luxury communities, and long-term upside.",
-          href: "/listings/meydan",
+          href: "/areas/meydan",
           imageClass: "area-two"
         }
       ]
@@ -253,21 +253,21 @@ const content = {
           slug: "downtown",
           title: "Downtown",
           description: "زندگی شهری شاخص با ویوی برج خلیفه، تقاضای جهانی و جذابیت اجاره ای قوی.",
-          href: "/listings/downtown",
+          href: "/areas/downtown",
           imageClass: "area-one"
         },
         {
           slug: "palm-jumeirah",
           title: "Palm Jumeirah",
           description: "آدرس واترفرانت شاخص دبی برای رزیدنس های برندد، خانه های ساحلی و ویوهای کمیاب.",
-          href: "/listings/palm-jumeirah",
+          href: "/areas/palm-jumeirah",
           imageClass: "featured-two"
         },
         {
           slug: "meydan",
           title: "Meydan",
           description: "منطقه ای رو به رشد برای ویلاها، کامیونیتی های لوکس جدید و پتانسیل بلندمدت.",
-          href: "/listings/meydan",
+          href: "/areas/meydan",
           imageClass: "area-two"
         }
       ]
