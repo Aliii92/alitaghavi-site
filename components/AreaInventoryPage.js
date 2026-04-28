@@ -20,6 +20,7 @@ import { areaNameFromSlug, readDynamicAreaNames } from "../lib/dynamic-areas.js"
 const visibleAreaSlugs = ["palm-jumeirah", "downtown", "bluewaters", "meydan"];
 const primaryAreaNames = new Set(["Palm Jumeirah", "Downtown", "Bluewaters", "Meydan"]);
 const promotionThreshold = 4;
+const resaleAreaFields = ["area", "region", "location", "community", "project_location", "building", "project_name", "project"];
 
 function slugifyArea(value) {
   return String(value || "area")
@@ -33,6 +34,7 @@ function normalizeAreaValue(value) {
   return String(value || "")
     .toLowerCase()
     .trim()
+    .replace(/[_-]/g, " ")
     .replace(/-/g, " ")
     .replace(/\s+/g, " ");
 }
@@ -102,7 +104,7 @@ function NavBar({ owner = "ali", locale = "en" }) {
 }
 
 function DebugPanel({ debug }) {
-  if (!debug) return null;
+  if (process.env.NODE_ENV === "production" || !debug) return null;
 
   return (
     <div className="contact-card empty-listings-card" style={{ marginTop: "1.5rem", textAlign: "left" }}>
@@ -145,6 +147,36 @@ function filterAreaProperties(properties, inventoryType) {
   return visible.filter(isReadyProperty);
 }
 
+function tableNameForInventoryType(inventoryType) {
+  return inventoryType === "resale-off-plan" ? "resale_off_plan" : "properties";
+}
+
+function propertyMatchesArea(property, areaSlug, inventoryType) {
+  const target = normalizeAreaValue(areaSlug);
+  if (!target) return false;
+
+  if (inventoryType === "resale-off-plan") {
+    return resaleAreaFields.some((field) => normalizeAreaValue(property?.[field]) === target);
+  }
+
+  return normalizeAreaValue(property?.area) === target;
+}
+
+function uniqueAreaDebugValues(rows, inventoryType) {
+  if (inventoryType !== "resale-off-plan") {
+    return [...new Set((Array.isArray(rows) ? rows : []).map((row) => String(row?.area || "").trim()).filter(Boolean))];
+  }
+
+  const values = new Set();
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    resaleAreaFields.forEach((field) => {
+      const value = String(row?.[field] || "").trim();
+      if (value) values.add(`${field}: ${value}`);
+    });
+  });
+  return [...values];
+}
+
 function groupByArea(properties) {
   const groups = new Map();
   (Array.isArray(properties) ? properties : []).forEach((property) => {
@@ -164,24 +196,30 @@ function promotedAreaNames(properties) {
   );
 }
 
-async function fetchPropertiesByAreaSlug(areaSlug) {
+async function fetchPropertiesByAreaSlug(areaSlug, inventoryType = "ready") {
   if (!hasSupabaseServerConfig()) return { data: null, error: new Error("Supabase server configuration is missing.") };
 
   try {
-    const data = await supabaseSelect("properties", { order: "id.asc" });
-    const properties = Array.isArray(data) ? data : [];
-    const slugArea = normalizeAreaValue(areaSlug);
-    const areaListings = properties.filter((property) => normalizeAreaValue(property?.area) === slugArea);
-    return { data: properties, areaListings, error: null };
+    const tableName = tableNameForInventoryType(inventoryType);
+    const data = await supabaseSelect(tableName, { order: "id.asc" });
+    const rows = Array.isArray(data) ? data : [];
+    const areaListings = rows.filter((property) => propertyMatchesArea(property, areaSlug, inventoryType));
+    return { data: rows, areaListings, error: null, tableName, uniqueValues: uniqueAreaDebugValues(rows, inventoryType) };
   } catch (error) {
-    return { data: null, areaListings: [], error };
+    return { data: null, areaListings: [], error, tableName: tableNameForInventoryType(inventoryType), uniqueValues: [] };
   }
 }
 
-export async function buildAreaStaticParams() {
+export async function buildAreaStaticParams(inventoryType = "ready") {
   try {
-    const areaNames = await readDynamicAreaNames();
-    const dynamicSlugs = areaNames.map(slugifyArea).filter(Boolean);
+    const dynamicSlugs = inventoryType === "resale-off-plan"
+      ? [...new Set(
+          (await supabaseSelect("resale_off_plan", { order: "id.asc" }))
+            .flatMap((row) => resaleAreaFields.map((field) => String(row?.[field] || "").trim()))
+            .filter(Boolean)
+            .map(slugifyArea)
+        )]
+      : (await readDynamicAreaNames()).map(slugifyArea).filter(Boolean);
     return [...new Set([...visibleAreaSlugs, ...dynamicSlugs, "other-areas"])].map((area) => ({ area }));
   } catch (error) {
     console.error("[buildAreaStaticParams] Failed to load dynamic areas:", error);
@@ -221,7 +259,13 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
   try {
     const { area } = await params;
     const areaSlug = slugifyArea(area);
-    const dynamicAreaNames = await readDynamicAreaNames();
+    const dynamicAreaNames = inventoryType === "resale-off-plan"
+      ? [...new Set(
+          (await supabaseSelect("resale_off_plan", { order: "id.asc" }))
+            .flatMap((row) => resaleAreaFields.map((field) => String(row?.[field] || "").trim()))
+            .filter(Boolean)
+        )]
+      : await readDynamicAreaNames();
     const areaName =
       dynamicAreaNames.find((name) => slugifyArea(name) === areaSlug) ||
       areaNameFromSlug(areaSlug);
@@ -234,7 +278,7 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
       areaSlug,
       supabaseUrlExists: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       supabaseKeyExists: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      table: "properties"
+      table: tableNameForInventoryType(inventoryType)
     };
 
     if (areaSlug !== "other-areas" && !dynamicAreaSlugs.includes(areaSlug)) {
@@ -242,11 +286,11 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
     }
 
     if (areaSlug === "other-areas") {
-      const allRows = await supabaseSelect("properties", { order: "id.asc" });
+      const allRows = await supabaseSelect(tableNameForInventoryType(inventoryType), { order: "id.asc" });
       const allProperties = filterAreaProperties((Array.isArray(allRows) ? allRows : []).map((row) => normalizeProperty({
         ...row,
-        category: row?.category || row?.inventory_type || "ready",
-        inventory_type: row?.inventory_type || row?.category || "Ready"
+        category: row?.category || row?.inventory_type || (inventoryType === "resale-off-plan" ? "resale-off-plan" : "ready"),
+        inventory_type: row?.inventory_type || row?.category || (inventoryType === "resale-off-plan" ? "Resale Off-Plan" : "Ready")
       }, row?.id)), inventoryType);
       const promotedNames = promotedAreaNames(allProperties);
       const areaProperties = allProperties.filter((property) => {
@@ -312,9 +356,13 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
       );
     }
 
-    const { data, areaListings, error } = await fetchPropertiesByAreaSlug(areaSlug);
+    const { data, areaListings, error, tableName, uniqueValues } = await fetchPropertiesByAreaSlug(areaSlug, inventoryType);
     console.log("data:", data);
     console.log("error:", error);
+    console.log("table name queried:", tableName);
+    console.log("total rows fetched before filtering:", Array.isArray(data) ? data.length : 0);
+    console.log("unique area/location/community values found:", uniqueValues);
+    console.log("rows after filtering:", Array.isArray(areaListings) ? areaListings.length : 0);
     if (error) {
       console.error(`[public-area:${areaSlug}] Supabase error:`, error);
     }
@@ -323,8 +371,8 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
       normalizeProperty(
         {
           ...row,
-          category: row?.category || row?.inventory_type || "ready",
-          inventory_type: row?.inventory_type || row?.category || "Ready"
+          category: row?.category || row?.inventory_type || (inventoryType === "resale-off-plan" ? "resale-off-plan" : "ready"),
+          inventory_type: row?.inventory_type || row?.category || (inventoryType === "resale-off-plan" ? "Resale Off-Plan" : "Ready")
         },
         row?.id
       )
