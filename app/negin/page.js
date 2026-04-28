@@ -8,6 +8,7 @@ import ProfileHomePage from "../../components/ProfileHomePage";
 import ResponsiveNavbar from "../../components/ResponsiveNavbar";
 import LeadWhatsAppButton from "../../components/LeadWhatsAppButton";
 import { getImageSrc } from "../../lib/get-image-src";
+import { localizeHomepageProjectCard } from "../../lib/homepage-projects";
 import { localizePath } from "../../lib/locale";
 import { resolveProjectImage } from "../../lib/project-images";
 import { buildLeadPayload, buildPropertyWhatsAppUrl } from "../../lib/whatsapp";
@@ -669,7 +670,7 @@ export default function NeginPage() {
     ...card,
     href: localizePath(`/prime-areas/negin-${card.slug}`, locale)
   }));
-  const projectCards = (offPlanProjects.length ? offPlanProjects : t.projects.cards).map((project) => localizeProjectCard(project, locale));
+  const projectCards = (offPlanProjects.length ? offPlanProjects : t.projects.cards).map((project) => localizeHomepageProjectCard(project, locale));
   const [formData, setFormData] = useState({
     name: "",
     email: "",

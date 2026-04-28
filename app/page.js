@@ -7,6 +7,7 @@ import ProfileHomePage from "../components/ProfileHomePage";
 import ProjectImage from "../components/ProjectImage";
 import ResponsiveNavbar from "../components/ResponsiveNavbar";
 import { getImageSrc } from "../lib/get-image-src";
+import { localizeHomepageProjectCard } from "../lib/homepage-projects";
 import { localizePath } from "../lib/locale";
 import { resolveProjectImage } from "../lib/project-images";
 
@@ -793,7 +794,7 @@ export default function HomePage() {
     ...card,
     href: localizePath(`/prime-areas/${card.slug}`, locale)
   }));
-  const projectCards = offPlanProjects.map((project) => localizeProjectCard(project, locale));
+  const projectCards = offPlanProjects.map((project) => localizeHomepageProjectCard(project, locale));
   const navLinks = [
     { href: localizePath("/ready-properties", locale), label: t.nav.featured },
     { href: localizePath("/off-plan-projects", locale), label: t.nav.projects },
