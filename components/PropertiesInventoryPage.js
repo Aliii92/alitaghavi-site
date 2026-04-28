@@ -1,4 +1,5 @@
 import AreaPropertyFilters from "./AreaPropertyFilters";
+import RegionGroupedListings from "./RegionGroupedListings";
 import ResponsiveNavbar from "./ResponsiveNavbar";
 import {
   isReadyProperty,
@@ -263,6 +264,9 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
   const projectProperties = (await readProjects()).map(projectToProperty);
   const searchableInventory = [...baseProperties, ...projectProperties];
   const properties = filterPropertiesByInventory(baseProperties, inventoryType);
+  const regionEligibleProperties = properties.filter((property) =>
+    String(property?.area || property?.region || property?.location || property?.community || "").trim()
+  );
   const propertiesByArea = groupByArea(properties);
   const areaBasePath = inventoryType === "resale-off-plan"
     ? `${owner === "negin" ? "/negin" : ""}/resale-off-plan`
@@ -308,7 +312,7 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
 
   if (process.env.NODE_ENV !== "production") {
     console.log(
-      `[public-properties:${inventoryType}] source=${propertySource} totalFetched=${baseProperties.length} afterInventoryFilter=${properties.length} overviewGroups=${overviewGroups.length}`
+      `[public-properties:${inventoryType}] source=${propertySource} totalFetched=${baseProperties.length} afterInventoryFilter=${properties.length} regionEligible=${regionEligibleProperties.length} overviewGroups=${overviewGroups.length}`
     );
     if (inventoryType === "resale-off-plan") {
       console.log("Resale off-plan listings:", properties.length);
@@ -375,6 +379,19 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
 
         {hasSearch ? null : (
           <section className="section listings-area-section">
+            {inventoryType === "ready" || inventoryType === "resale-off-plan" ? (
+              <RegionGroupedListings
+                properties={regionEligibleProperties}
+                areaName="Dubai"
+                advisorName={owner === "negin" ? "Negin Mohamadi" : "Ali Taghavi"}
+                sourcePage={`${owner === "negin" ? "Negin" : "Ali"} ${config.eyebrow}`}
+                phoneNumber={owner === "negin" ? "971505996547" : "971522950316"}
+                owner={owner}
+                locale={locale}
+                minimumProperties={3}
+                initialVisible={3}
+              />
+            ) : (
             <div className="three-column-grid listings-area-grid">
               {overviewGroups.map((group) => (
                 <a className="listing-card area-overview-card" href={`${areaBasePath}/${group.slug}`} key={group.slug}>
@@ -392,6 +409,7 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
                 </a>
               ))}
             </div>
+            )}
           </section>
         )}
       </div>
