@@ -7,6 +7,7 @@ import {
   isPubliclyVisibleProperty,
   matchesAreaSlug,
   normalizeAreaSlug,
+  normalizeProperty,
   readProperties
 } from "../lib/properties.js";
 import {
@@ -16,6 +17,7 @@ import {
 } from "../lib/public-context.js";
 import { localizePath } from "../lib/locale";
 import { getRequestLocale } from "../lib/server-locale";
+import { hasSupabaseServerConfig, supabaseSelect } from "../lib/supabase-server.js";
 
 const visibleAreaSlugs = ["palm-jumeirah", "downtown", "bluewaters", "meydan"];
 const primaryAreaNames = new Set(["Palm Jumeirah", "Downtown", "Bluewaters", "Meydan"]);
@@ -45,6 +47,18 @@ function slugifyArea(value) {
     .replace(/&/g, "and")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+}
+
+function normalizedSlugToAreaName(areaSlug) {
+  const slug = String(areaSlug || "").trim().toLowerCase();
+  if (!slug) return "";
+  if (primaryAreaFallbacks[slug]?.name) return primaryAreaFallbacks[slug].name;
+
+  return slug
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function groupByArea(properties) {
@@ -140,7 +154,16 @@ function resolveSelectedArea(areaSlug, areas, properties = [], inventoryType = "
   }
 
   const promotedName = [...promotedAreaNames(properties)].find((areaName) => slugifyArea(areaName) === areaSlug);
-  if (!promotedName) return null;
+  if (!promotedName) {
+    const fallbackName = normalizedSlugToAreaName(areaSlug);
+    return fallbackName
+      ? {
+          slug: areaSlug,
+          name: fallbackName,
+          note: `Curated opportunities in ${fallbackName}.`
+        }
+      : null;
+  }
 
   return {
     slug: slugifyArea(promotedName),
@@ -200,7 +223,6 @@ function SafeAreaPage({
   config,
   title,
   message,
-  details = "",
   overviewPath
 }) {
   return (
@@ -212,9 +234,6 @@ function SafeAreaPage({
             <p className="section-eyebrow">{config?.eyebrow || (locale === "fa" ? "لیست املاک منطقه" : "Area listings")}</p>
             <h1>{title}</h1>
             <p className="section-text">{message}</p>
-            {process.env.NODE_ENV !== "production" && details ? (
-              <p className="section-text">{details}</p>
-            ) : null}
             <a className="button secondary-button back-to-listings-button" href={overviewPath}>
               {locale === "fa" ? "بازگشت به همه مناطق" : "Back to All Areas"}
             </a>
@@ -293,6 +312,7 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
   try {
     const { area } = await params;
     const normalizedArea = normalizeAreaSlug(area);
+    const normalizedAreaName = normalizedSlugToAreaName(normalizedArea);
     const hasSupabaseUrl = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
     const hasSupabaseAnonKey = Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
@@ -306,15 +326,40 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
       console.error(`[public-area:${area}] Failed to load areas:`, error);
     }
 
+    console.log("areaSlug:", area);
+    console.log("normalizedArea:", normalizedAreaName);
+    console.log("Supabase URL exists:", hasSupabaseUrl);
+    console.log("Supabase KEY exists:", hasSupabaseAnonKey);
+
     let readyAndResaleProperties = [];
     let propertySource = "supabase";
     let propertyLoadError = "";
+    let supabaseData = null;
+    let supabaseError = null;
     try {
-      readyAndResaleProperties = await readProperties({
-        allowFallback: false,
-        inventoryType: inventoryType === "resale-off-plan" ? "resale-off-plan" : "ready"
-      });
+      if (inventoryType === "ready" && hasSupabaseServerConfig()) {
+        supabaseData = await supabaseSelect("properties", {
+          area: `eq.${normalizedAreaName}`,
+          order: "id.asc"
+        });
+        readyAndResaleProperties = (Array.isArray(supabaseData) ? supabaseData : []).map((row) =>
+          normalizeProperty(
+            {
+              ...row,
+              category: row?.category || row?.inventory_type || "ready",
+              inventory_type: row?.inventory_type || row?.category || "Ready"
+            },
+            row?.id
+          )
+        );
+      } else {
+        readyAndResaleProperties = await readProperties({
+          allowFallback: false,
+          inventoryType: inventoryType === "resale-off-plan" ? "resale-off-plan" : "ready"
+        });
+      }
     } catch (error) {
+      supabaseError = error;
       propertyLoadError = error?.message || "Unable to load properties.";
       console.error(`[public-area:${area}] Supabase error:`, error);
       console.warn(`[public-area:${area}] Supabase unavailable, falling back to local JSON:`, error?.message || error);
@@ -331,6 +376,8 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
         propertySource = "unavailable";
       }
     }
+    console.log("data:", supabaseData);
+    console.log("error:", supabaseError);
 
     const allProperties = filterPropertiesByInventory(readyAndResaleProperties, inventoryType);
     const selectedArea = resolveSelectedArea(area, areas, allProperties, inventoryType);
@@ -358,7 +405,6 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
           config={config}
           title={locale === "fa" ? "لیست املاک منطقه" : "Area listings"}
           message={locale === "fa" ? "در حال حاضر امکان بارگذاری این منطقه وجود ندارد." : "We could not load this area right now."}
-          details={areaLoadError || propertyLoadError}
           overviewPath={overviewPath}
         />
       );
@@ -417,7 +463,7 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
             ) : (
               <article className="contact-card empty-listings-card">
                 <h3>{locale === "fa" ? `هنوز لیستینگی در ${selectedArea.name} موجود نیست.` : "No listings available in this area yet."}</h3>
-                <p>{propertyLoadError || areaLoadError || config.emptyBody}</p>
+                <p>{config.emptyBody}</p>
               </article>
             )}
           </section>
@@ -445,7 +491,6 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
         config={config}
         title={locale === "fa" ? "لیست املاک منطقه" : "Area listings"}
         message={locale === "fa" ? "در حال حاضر امکان بارگذاری این منطقه وجود ندارد." : "We could not load this area right now."}
-        details={error?.message || String(error)}
         overviewPath={overviewPath}
       />
     );
