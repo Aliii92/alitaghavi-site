@@ -161,14 +161,49 @@ button {
   justify-content: center;
   background: var(--navy-900);
   color: var(--white);
-  box-shadow: 0 10px 24px rgba(10, 26, 57, 0.16);
-  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease, filter 160ms ease;
 }
 
 .social-icon-link:hover {
-  background: #183455;
   transform: scale(1.05);
-  box-shadow: 0 14px 28px rgba(10, 26, 57, 0.22);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+}
+
+.social-icon-whatsapp {
+  background: #25D366;
+  color: #ffffff;
+}
+
+.social-icon-whatsapp:hover {
+  background: #1fb85a;
+}
+
+.social-icon-instagram {
+  background: linear-gradient(45deg, #F58529, #DD2A7B, #8134AF, #515BD4);
+  color: #ffffff;
+}
+
+.social-icon-instagram:hover {
+  filter: brightness(0.94);
+}
+
+.social-icon-youtube {
+  background: #FF0000;
+  color: #ffffff;
+}
+
+.social-icon-youtube:hover {
+  background: #db0000;
+}
+
+.social-icon-linkedin {
+  background: #0A66C2;
+  color: #ffffff;
+}
+
+.social-icon-linkedin:hover {
+  background: #0857a4;
 }
 
 .nav-links {

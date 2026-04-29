@@ -157,10 +157,10 @@ export default function ProfileHomePage({
 }) {
   const followLabel = locale === "fa" ? "ما را دنبال کنید" : "Follow us";
   const socialLinks = [
-    { href: contact.whatsappHref, label: contact.whatsapp || "WhatsApp", icon: <WhatsAppIcon /> },
-    { href: contact.instagramHref, label: contact.instagram || "Instagram", icon: <InstagramIcon /> },
-    { href: contact.youtubeHref, label: contact.youtube || "YouTube", icon: <YouTubeIcon /> },
-    ...(contact.linkedinHref ? [{ href: contact.linkedinHref, label: contact.linkedin || "LinkedIn", icon: <LinkedInIcon /> }] : [])
+    { href: contact.whatsappHref, label: contact.whatsapp || "WhatsApp", icon: <WhatsAppIcon />, className: "social-icon-whatsapp" },
+    { href: contact.instagramHref, label: contact.instagram || "Instagram", icon: <InstagramIcon />, className: "social-icon-instagram" },
+    { href: contact.youtubeHref, label: contact.youtube || "YouTube", icon: <YouTubeIcon />, className: "social-icon-youtube" },
+    ...(contact.linkedinHref ? [{ href: contact.linkedinHref, label: contact.linkedin || "LinkedIn", icon: <LinkedInIcon />, className: "social-icon-linkedin" }] : [])
   ].filter((item) => item.href);
 
   return (
@@ -340,12 +340,12 @@ export default function ProfileHomePage({
                   <span className="contact-social-label">{followLabel}</span>
                   <div className="contact-social-icons">
                     {socialLinks.map((item) => (
-                      <a
-                        key={item.label}
-                        className="social-icon-link"
-                        href={item.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        <a
+                          key={item.label}
+                          className={`social-icon-link ${item.className || ""}`}
+                          href={item.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
                         aria-label={item.label}
                         title={item.label}
                       >
