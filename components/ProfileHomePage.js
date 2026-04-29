@@ -38,6 +38,14 @@ function InstagramIcon() {
   );
 }
 
+function LinkedInIcon() {
+  return (
+    <svg className="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M6.1 8.2H3.3V20h2.8V8.2ZM4.7 3A1.7 1.7 0 1 0 4.8 6.4 1.7 1.7 0 0 0 4.7 3Zm15 9.7c0-3.5-1.9-5.1-4.4-5.1-2 0-2.9 1.1-3.4 1.9v-1.6H9.2c0 1 .1 11.8 0 11.8H12v-6.6c0-.4 0-.7.2-1 .4-.7 1.2-1.5 2.5-1.5 1.8 0 2.5 1.3 2.5 3.2V20H20c0-3.8-.1-7.3-.1-7.3Z" />
+    </svg>
+  );
+}
+
 function LocationCard({ card, cta, locale = "en" }) {
   const imageSrc = getImageSrc(card, "/images/property-placeholder.jpg");
   return (
@@ -147,6 +155,14 @@ export default function ProfileHomePage({
   floatingWhatsappHref,
   floatingWhatsappLabel
 }) {
+  const followLabel = locale === "fa" ? "ما را دنبال کنید" : "Follow us";
+  const socialLinks = [
+    { href: contact.whatsappHref, label: contact.whatsapp || "WhatsApp", icon: <WhatsAppIcon /> },
+    { href: contact.instagramHref, label: contact.instagram || "Instagram", icon: <InstagramIcon /> },
+    { href: contact.youtubeHref, label: contact.youtube || "YouTube", icon: <YouTubeIcon /> },
+    ...(contact.linkedinHref ? [{ href: contact.linkedinHref, label: contact.linkedin || "LinkedIn", icon: <LinkedInIcon /> }] : [])
+  ].filter((item) => item.href);
+
   return (
     <main className={`luxury-page ${locale === "fa" ? "rtl" : ""}`}>
       <ResponsiveNavbar
@@ -320,19 +336,23 @@ export default function ProfileHomePage({
 
               <article className="contact-card">
                 <h3>{contact.connectTitle}</h3>
-                <div className="contact-buttons">
-                  <a className="button whatsapp-button social-action-button" href={contact.whatsappHref} target="_blank" rel="noopener noreferrer">
-                    <WhatsAppIcon />
-                    {contact.whatsapp}
-                  </a>
-                  <a className="button instagram-button social-action-button social-outline-button" href={contact.instagramHref} target="_blank" rel="noopener noreferrer">
-                    <InstagramIcon />
-                    {contact.instagram}
-                  </a>
-                  <a className="button youtube-button social-action-button social-outline-button" href={contact.youtubeHref} target="_blank" rel="noopener noreferrer">
-                    <YouTubeIcon />
-                    {contact.youtube}
-                  </a>
+                <div className="contact-social-row">
+                  <span className="contact-social-label">{followLabel}</span>
+                  <div className="contact-social-icons">
+                    {socialLinks.map((item) => (
+                      <a
+                        key={item.label}
+                        className="social-icon-link"
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={item.label}
+                        title={item.label}
+                      >
+                        {item.icon}
+                      </a>
+                    ))}
+                  </div>
                 </div>
               </article>
             </div>
