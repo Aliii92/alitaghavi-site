@@ -119,6 +119,16 @@ button {
   gap: 10px;
 }
 
+.social-action-button {
+  min-height: 46px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  gap: 8px;
+  justify-content: center;
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
 .nav-links {
   justify-content: center;
   flex-wrap: wrap;
@@ -386,14 +396,15 @@ button {
 }
 
 .whatsapp-button {
-  background: linear-gradient(180deg, #27c967 0%, #179b50 100%);
+  background: linear-gradient(180deg, #32c86b 0%, #1f9f54 100%);
   color: var(--white);
-  box-shadow: 0 12px 24px rgba(23, 155, 80, 0.2);
+  box-shadow: 0 10px 22px rgba(23, 155, 80, 0.18);
 }
 
 .whatsapp-button:hover {
-  background: linear-gradient(180deg, #20b85c 0%, #128244 100%);
-  box-shadow: 0 16px 34px rgba(18, 130, 68, 0.26);
+  background: linear-gradient(180deg, #2ab661 0%, #188747 100%);
+  box-shadow: 0 14px 28px rgba(18, 130, 68, 0.22);
+  transform: scale(1.02);
 }
 
 .floating-whatsapp {
@@ -427,19 +438,38 @@ button {
 }
 
 .instagram-button {
-  background: linear-gradient(90deg, #ff9f43 0%, #f94d8b 48%, #8347ff 100%);
-  color: var(--white);
+  background: rgba(255, 255, 255, 0.9);
+  color: #a13d7f;
+  border: 1px solid rgba(161, 61, 127, 0.18);
+  box-shadow: 0 10px 22px rgba(131, 71, 255, 0.08);
 }
 
 .youtube-button {
-  background: linear-gradient(90deg, #c91f1f 0%, #e63131 100%);
-  color: var(--white);
+  background: rgba(255, 255, 255, 0.9);
+  color: #be2a2a;
+  border: 1px solid rgba(190, 42, 42, 0.16);
+  box-shadow: 0 10px 22px rgba(201, 31, 31, 0.08);
+}
+
+.social-outline-button:hover {
+  transform: scale(1.02);
+  box-shadow: 0 14px 28px rgba(10, 26, 57, 0.12);
+}
+
+.instagram-button:hover {
+  background: rgba(255, 255, 255, 0.98);
+  color: #8d2f6f;
+}
+
+.youtube-button:hover {
+  background: rgba(255, 255, 255, 0.98);
+  color: #a51f1f;
 }
 
 .button .button-icon {
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
   fill: currentColor;
   display: inline-block;
 }
@@ -2738,7 +2768,8 @@ button {
 .contact-buttons {
   flex-direction: column;
   align-items: stretch;
-  margin-top: 22px;
+  margin-top: 20px;
+  gap: 12px;
 }
 
 .contact-buttons .button {

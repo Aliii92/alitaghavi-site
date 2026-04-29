@@ -22,6 +22,22 @@ function YouTubeIcon() {
   );
 }
 
+function WhatsAppIcon() {
+  return (
+    <svg className="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12.04 2.4a9.54 9.54 0 0 0-8.2 14.43L2.4 21.6l4.92-1.29a9.47 9.47 0 0 0 4.7 1.2h.01A9.53 9.53 0 0 0 21.6 12 9.56 9.56 0 0 0 12.04 2.4Zm0 17.36h-.01a7.88 7.88 0 0 1-4.02-1.1l-.29-.17-2.9.76.78-2.82-.18-.3a7.89 7.89 0 0 1-1.21-4.2 7.83 7.83 0 0 1 7.83-7.82c2.09 0 4.06.81 5.53 2.29A7.76 7.76 0 0 1 19.4 12a7.83 7.83 0 0 1-7.36 7.76Zm4.29-5.86c-.23-.11-1.39-.69-1.6-.76-.21-.08-.37-.11-.52.11-.15.23-.6.76-.73.91-.13.15-.27.17-.5.06-.23-.11-.99-.36-1.88-1.16a6.96 6.96 0 0 1-1.3-1.62c-.13-.23-.02-.36.11-.48.1-.1.23-.27.35-.4.12-.13.16-.23.23-.38.08-.15.04-.29-.02-.4-.06-.12-.52-1.26-.71-1.72-.19-.45-.38-.39-.52-.4h-.44c-.15 0-.4.06-.62.29-.21.23-.81.79-.81 1.93s.83 2.24.95 2.39c.11.15 1.64 2.5 3.97 3.51.56.24.98.38 1.33.5.56.18 1.07.15 1.47.09.45-.07 1.39-.56 1.58-1.1.19-.54.19-1.01.14-1.1-.06-.1-.21-.16-.44-.27Z" />
+    </svg>
+  );
+}
+
+function InstagramIcon() {
+  return (
+    <svg className="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7.2 2.4h9.6A4.8 4.8 0 0 1 21.6 7.2v9.6a4.8 4.8 0 0 1-4.8 4.8H7.2a4.8 4.8 0 0 1-4.8-4.8V7.2A4.8 4.8 0 0 1 7.2 2.4Zm0 1.8A3 3 0 0 0 4.2 7.2v9.6a3 3 0 0 0 3 3h9.6a3 3 0 0 0 3-3V7.2a3 3 0 0 0-3-3H7.2Zm10.05 1.35a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4ZM12 7.2A4.8 4.8 0 1 1 7.2 12 4.8 4.8 0 0 1 12 7.2Zm0 1.8A3 3 0 1 0 15 12a3 3 0 0 0-3-3Z" />
+    </svg>
+  );
+}
+
 function LocationCard({ card, cta, locale = "en" }) {
   const imageSrc = getImageSrc(card, "/images/property-placeholder.jpg");
   return (
@@ -305,13 +321,15 @@ export default function ProfileHomePage({
               <article className="contact-card">
                 <h3>{contact.connectTitle}</h3>
                 <div className="contact-buttons">
-                  <a className="button whatsapp-button" href={contact.whatsappHref} target="_blank" rel="noopener noreferrer">
+                  <a className="button whatsapp-button social-action-button" href={contact.whatsappHref} target="_blank" rel="noopener noreferrer">
+                    <WhatsAppIcon />
                     {contact.whatsapp}
                   </a>
-                  <a className="button instagram-button" href={contact.instagramHref} target="_blank" rel="noopener noreferrer">
+                  <a className="button instagram-button social-action-button social-outline-button" href={contact.instagramHref} target="_blank" rel="noopener noreferrer">
+                    <InstagramIcon />
                     {contact.instagram}
                   </a>
-                  <a className="button youtube-button" href={contact.youtubeHref} target="_blank" rel="noopener noreferrer">
+                  <a className="button youtube-button social-action-button social-outline-button" href={contact.youtubeHref} target="_blank" rel="noopener noreferrer">
                     <YouTubeIcon />
                     {contact.youtube}
                   </a>
