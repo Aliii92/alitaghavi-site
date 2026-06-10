@@ -181,7 +181,7 @@ function inventoryCopy(locale = "en", inventoryType = "ready") {
 }
 
 function NavBar({ owner = "ali", locale = "en" }) {
-  const homeHref = localizePath(owner === "negin" ? "/negin" : "/", locale);
+  const homeHref = localizePath("/", locale);
   const readyHref = localizePath(readyPropertiesPathFor(owner), locale);
   const offPlanHref = localizePath(offPlanProjectsPathFor(owner), locale);
   const resaleHref = localizePath(resaleOffPlanPathFor(owner), locale);
@@ -189,7 +189,6 @@ function NavBar({ owner = "ali", locale = "en" }) {
   const areasHref = `${homeHref}#areas`;
   const contactHref = `${homeHref}#contact`;
   const aboutHref = `${homeHref}#advisory`;
-  const switchHref = localizePath(owner === "ali" ? "/negin" : "/", locale);
   const copy = locale === "fa"
     ? {
         brand: "املاک لوکس دبی",
@@ -198,8 +197,7 @@ function NavBar({ owner = "ali", locale = "en" }) {
         resale: "ری‌سیل آف‌پلن",
         areas: "مناطق برتر",
         contact: "ارتباط",
-        about: "درباره من",
-        otherAdvisor: owner === "ali" ? "نگین محمدی" : "علی تقوی"
+        about: "درباره من"
       }
     : {
         brand: "Dubai Luxury Properties",
@@ -208,8 +206,7 @@ function NavBar({ owner = "ali", locale = "en" }) {
         resale: "Resale Off-Plan",
         areas: "Prime Areas",
         contact: "Contact",
-        about: "About Me",
-        otherAdvisor: owner === "ali" ? "Negin Mohamadi" : "Ali Taghavi"
+        about: "About Me"
       };
 
   return (
@@ -222,7 +219,6 @@ function NavBar({ owner = "ali", locale = "en" }) {
           { href: resaleHref, label: copy.resale },
           { href: blogHref, label: locale === "fa" ? "تحلیل بازار" : "Market Insights" },
           { href: areasHref, label: copy.areas },
-          { href: switchHref, label: copy.otherAdvisor },
           { href: contactHref, label: copy.contact },
           { href: aboutHref, label: copy.about }
         ]}
@@ -274,9 +270,7 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
     String(property?.area || property?.region || property?.location || property?.community || "").trim()
   );
   const propertiesByArea = groupByArea(properties);
-  const areaBasePath = inventoryType === "resale-off-plan"
-    ? `${owner === "negin" ? "/negin" : ""}/resale-off-plan`
-    : `${owner === "negin" ? "/negin/areas" : "/areas"}`;
+  const areaBasePath = inventoryType === "resale-off-plan" ? "/resale-off-plan" : "/areas";
   const overviewBasePath = inventoryType === "resale-off-plan"
     ? resaleOffPlanPathFor(owner)
     : readyPropertiesPathFor(owner);
@@ -366,13 +360,13 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
             <AreaPropertyFilters
               properties={searchableInventory}
               areaName="Dubai"
-              advisorName={owner === "negin" ? "Negin Mohamadi" : "Ali Taghavi"}
-              phoneNumber={owner === "negin" ? "971505996547" : "971522950316"}
+              advisorName="Ali Taghavi"
+              phoneNumber="971522950316"
               owner={owner}
-              sourcePage={`${owner === "negin" ? "Negin" : "Ali"} ${config.eyebrow} Search`}
+              sourcePage={`Ali ${config.eyebrow} Search`}
               redirectBase={overviewBasePath}
               redirectBaseByCategory={{
-                all: owner === "negin" ? "/negin/listings" : "/listings",
+                all: "/listings",
                 ready: readyPropertiesPathFor(owner),
                 "off-plan": offPlanProjectsPathFor(owner),
                 "resale-off-plan": resaleOffPlanPathFor(owner)
@@ -396,9 +390,9 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
               <RegionGroupedListings
                 properties={regionEligibleProperties}
                 areaName="Dubai"
-                advisorName={owner === "negin" ? "Negin Mohamadi" : "Ali Taghavi"}
-                sourcePage={`${owner === "negin" ? "Negin" : "Ali"} ${config.eyebrow}`}
-                phoneNumber={owner === "negin" ? "971505996547" : "971522950316"}
+                advisorName="Ali Taghavi"
+                sourcePage={`Ali ${config.eyebrow}`}
+                phoneNumber="971522950316"
                 owner={owner}
                 locale={locale}
                 minimumProperties={3}
@@ -431,10 +425,10 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
 
       <a
         className="floating-whatsapp"
-        href={`https://wa.me/${owner === "negin" ? "971505996547" : "971522950316"}`}
+        href="https://wa.me/971522950316"
         target="_blank"
         rel="noopener noreferrer"
-        aria-label={`Open WhatsApp chat with ${owner === "negin" ? "Negin Mohamadi" : "Ali Taghavi"}`}
+        aria-label="Open WhatsApp chat with Ali Taghavi"
       >
         <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
           <path d="M16.04 3C8.88 3 3.06 8.82 3.06 15.98c0 2.29.6 4.53 1.74 6.5L3 29l6.68-1.75a12.9 12.9 0 0 0 6.36 1.62h.01c7.16 0 12.98-5.82 12.98-12.98C29.03 8.82 23.2 3 16.04 3Zm0 23.66h-.01a10.76 10.76 0 0 1-5.48-1.5l-.39-.23-3.96 1.04 1.06-3.86-.25-.4a10.74 10.74 0 0 1-1.65-5.73c0-5.89 4.8-10.68 10.7-10.68 2.85 0 5.53 1.11 7.55 3.13a10.61 10.61 0 0 1 3.12 7.55c0 5.89-4.8 10.68-10.69 10.68Zm5.86-8c-.32-.16-1.9-.94-2.2-1.05-.29-.11-.5-.16-.72.16-.21.32-.82 1.05-1 1.26-.18.21-.37.24-.69.08-.32-.16-1.36-.5-2.59-1.6-.96-.85-1.6-1.91-1.79-2.23-.18-.32-.02-.49.14-.65.14-.14.32-.37.48-.55.16-.19.21-.32.32-.53.11-.21.05-.4-.03-.56-.08-.16-.72-1.73-.98-2.37-.26-.62-.52-.54-.72-.55h-.61c-.21 0-.56.08-.85.4-.29.32-1.12 1.09-1.12 2.66s1.15 3.09 1.31 3.3c.16.21 2.26 3.45 5.48 4.84.77.33 1.36.53 1.83.68.77.24 1.47.21 2.02.13.62-.09 1.9-.77 2.17-1.52.27-.75.27-1.39.19-1.52-.08-.13-.29-.21-.61-.37Z" />

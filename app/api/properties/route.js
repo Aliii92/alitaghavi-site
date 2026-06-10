@@ -26,10 +26,8 @@ function logAction(action, details = {}) {
   });
 }
 
-function revalidatePropertyPaths(owner) {
-  const paths = owner === "negin"
-    ? ["/negin", "/negin/ready-properties", "/negin/listings", "/negin/resale-off-plan", "/negin/off-plan"]
-    : ["/", "/ready-properties", "/listings", "/resale-off-plan", "/off-plan-projects"];
+function revalidatePropertyPaths() {
+  const paths = ["/", "/ready-properties", "/listings", "/resale-off-plan", "/off-plan-projects"];
   paths.forEach((path) => revalidatePath(path));
 }
 

@@ -25,10 +25,8 @@ function logAction(action, owner, payload = {}) {
   });
 }
 
-function revalidateProjectPaths(owner) {
-  const paths = owner === "negin"
-    ? ["/negin", "/negin/off-plan", "/negin/projects"]
-    : ["/", "/off-plan-projects", "/projects"];
+function revalidateProjectPaths() {
+  const paths = ["/", "/off-plan-projects", "/projects"];
   paths.forEach((path) => revalidatePath(path));
 }
 

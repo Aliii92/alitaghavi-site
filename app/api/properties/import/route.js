@@ -63,21 +63,13 @@ function forbidden() {
 }
 
 function revalidateInventoryPaths(owner) {
-  const basePaths = owner === "negin"
-    ? [
-        "/negin",
-        "/negin/ready-properties",
-        "/negin/listings",
-        "/negin/resale-off-plan",
-        "/negin/off-plan"
-      ]
-    : [
-        "/",
-        "/ready-properties",
-        "/listings",
-        "/resale-off-plan",
-        "/off-plan-projects"
-      ];
+  const basePaths = [
+    "/",
+    "/ready-properties",
+    "/listings",
+    "/resale-off-plan",
+    "/off-plan-projects"
+  ];
 
   basePaths.forEach((path) => revalidatePath(path));
 }

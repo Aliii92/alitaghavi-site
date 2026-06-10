@@ -6,7 +6,6 @@ export default async function sitemap() {
   const staticRoutes = [
     "",
     "/ready-properties",
-    "/negin",
     "/off-plan-projects"
   ];
 
@@ -18,7 +17,7 @@ export default async function sitemap() {
       priority: route === "" ? 1 : 0.8
     })),
     ...areas.map((area) => ({
-      url: `${baseUrl}/prime-areas/${area.owner === "negin" ? `negin-${area.slug}` : area.slug}`,
+      url: `${baseUrl}/prime-areas/${area.slug}`,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.7

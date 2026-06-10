@@ -72,7 +72,6 @@ function navLinks(locale = "en") {
         resale: "Resale Off-Plan",
         blog: "Market Insights",
         areas: "Prime Areas",
-        switch: "Negin Mohamadi",
         contact: "Contact",
         about: "About Me"
       };
@@ -83,7 +82,6 @@ function navLinks(locale = "en") {
     { href: localizePath("/resale-off-plan", locale), label: copy.resale },
     { href: localizePath("/blog", locale), label: copy.blog },
     { href: localizePath("/#areas", locale), label: copy.areas },
-    { href: localizePath("/negin", locale), label: copy.switch },
     { href: localizePath("/#contact", locale), label: copy.contact },
     { href: localizePath("/#advisory", locale), label: copy.about }
   ];
@@ -136,10 +134,6 @@ function looksLikeHtml(value = "") {
 }
 
 function resolveBlogAdvisor(author = "") {
-  const normalizedAuthor = String(author || "").toLowerCase();
-  if (normalizedAuthor.includes("negin")) {
-    return advisorForOwner("negin");
-  }
   return advisorForOwner("ali");
 }
 
@@ -267,3 +261,4 @@ export default async function BlogArticlePage({ params }) {
     </main>
   );
 }
+

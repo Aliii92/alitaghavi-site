@@ -247,14 +247,16 @@ export default function ProfileHomePage({
 
         <AdvisorySection data={advisory} locale={locale} />
 
-        <section className="section partnership-section">
-          <div className="partnership-note">
-            <p className="section-eyebrow">{partnership.eyebrow}</p>
-            <h2>{partnership.title}</h2>
-            <p>{partnership.text}</p>
-            <a href={partnership.href}>{partnership.link}</a>
-          </div>
-        </section>
+        {partnership?.title ? (
+          <section className="section partnership-section">
+            <div className="partnership-note">
+              <p className="section-eyebrow">{partnership.eyebrow}</p>
+              <h2>{partnership.title}</h2>
+              <p>{partnership.text}</p>
+              {partnership.href && partnership.link ? <a href={partnership.href}>{partnership.link}</a> : null}
+            </div>
+          </section>
+        ) : null}
 
         {testimonials?.items?.length ? (
           <section className="section section-testimonials">

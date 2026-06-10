@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
 const advisorConfig = {
-  ali: { label: "Ali Taghavi", storageKey: "ali_admin_password" },
-  negin: { label: "Negin Mohamadi", storageKey: "negin_admin_password" }
+  ali: { label: "Ali Taghavi", storageKey: "ali_admin_password" }
 };
 
 async function parseApiResponse(response) {

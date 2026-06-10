@@ -345,7 +345,7 @@ export default function AreaPropertyFilters({
   const shouldShowResults = showResults || searchSubmitted;
   const routeMap = useMemo(
     () => ({
-      all: owner === "negin" ? "/negin/listings" : "/listings",
+      all: "/listings",
       ready: readyPropertiesPathFor(owner),
       "off-plan": offPlanProjectsPathFor(owner),
       "resale-off-plan": resaleOffPlanPathFor(owner),

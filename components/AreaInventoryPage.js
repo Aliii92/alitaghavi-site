@@ -59,7 +59,7 @@ function inventoryConfig(inventoryType, locale = "en") {
 }
 
 function NavBar({ owner = "ali", locale = "en" }) {
-  const homeHref = localizePath(owner === "negin" ? "/negin" : "/", locale);
+  const homeHref = localizePath("/", locale);
   const readyHref = localizePath(readyPropertiesPathFor(owner), locale);
   const offPlanHref = localizePath(offPlanProjectsPathFor(owner), locale);
   const resaleHref = localizePath(resaleOffPlanPathFor(owner), locale);
@@ -72,8 +72,7 @@ function NavBar({ owner = "ali", locale = "en" }) {
         resale: "ری‌سیل آف‌پلن",
         areas: "مناطق برتر",
         contact: "ارتباط",
-        about: "درباره من",
-        otherAdvisor: owner === "ali" ? "نگین محمدی" : "علی تقوی"
+        about: "درباره من"
       }
     : {
         brand: "Dubai Luxury Properties",
@@ -82,8 +81,7 @@ function NavBar({ owner = "ali", locale = "en" }) {
         resale: "Resale Off-Plan",
         areas: "Prime Areas",
         contact: "Contact",
-        about: "About Me",
-        otherAdvisor: owner === "ali" ? "Negin Mohamadi" : "Ali Taghavi"
+        about: "About Me"
       };
 
   return (
@@ -95,8 +93,7 @@ function NavBar({ owner = "ali", locale = "en" }) {
           { href: offPlanHref, label: copy.projects },
           { href: resaleHref, label: copy.resale },
           { href: blogHref, label: locale === "fa" ? "تحلیل بازار" : "Market Insights" },
-          { href: `${owner === "negin" ? "/negin" : ""}/areas`, label: copy.areas },
-          { href: localizePath(owner === "ali" ? "/negin" : "/", locale), label: copy.otherAdvisor },
+          { href: "/areas", label: copy.areas },
           { href: `${homeHref}#contact`, label: copy.contact },
           { href: `${homeHref}#advisory`, label: copy.about }
         ]}
@@ -252,11 +249,7 @@ export async function buildAreaMetadata(areaSlug, owner = "ali", inventoryType =
   const description = areaName
     ? `Browse curated ${sectionLabel.toLowerCase()} in ${areaName}.`
     : `Browse curated ${sectionLabel.toLowerCase()} in Dubai's prime areas.`;
-  const base = inventoryType === "resale-off-plan"
-    ? resaleOffPlanPathFor(owner)
-    : owner === "negin"
-      ? `/negin/areas/${areaSlug}`
-      : `/areas/${areaSlug}`;
+  const base = inventoryType === "resale-off-plan" ? resaleOffPlanPathFor(owner) : `/areas/${areaSlug}`;
 
   return {
     title,
@@ -269,7 +262,7 @@ export async function buildAreaMetadata(areaSlug, owner = "ali", inventoryType =
 export default async function AreaInventoryPage({ params, owner = "ali", inventoryType = "ready" }) {
   const locale = await getRequestLocale();
   const config = inventoryConfig(inventoryType, locale);
-  const overviewPath = owner === "negin" ? "/negin/areas" : "/areas";
+  const overviewPath = "/areas";
 
   try {
     const { area } = await params;
@@ -333,14 +326,14 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
                 <AreaPropertyFilters
                   properties={areaProperties}
                   areaName="Other Areas"
-                  advisorName={owner === "negin" ? "Negin Mohamadi" : "Ali Taghavi"}
-                  phoneNumber={owner === "negin" ? "971505996547" : "971522950316"}
+                  advisorName="Ali Taghavi"
+                  phoneNumber="971522950316"
                   owner={owner}
-                  sourcePage={`${owner === "negin" ? "Negin" : "Ali"} ${config.eyebrow} Area Page: Other Areas`}
+                  sourcePage={`Ali ${config.eyebrow} Area Page: Other Areas`}
                   redirectBase={overviewPath}
                   redirectBaseByCategory={{
-                    all: owner === "negin" ? "/negin/listings" : "/listings",
-                    ready: owner === "negin" ? `/negin/areas/${areaSlug}` : `/areas/${areaSlug}`,
+                    all: "/listings",
+                    ready: `/areas/${areaSlug}`,
                     "off-plan": offPlanProjectsPathFor(owner),
                     "resale-off-plan": resaleOffPlanPathFor(owner)
                   }}
@@ -427,14 +420,14 @@ export default async function AreaInventoryPage({ params, owner = "ali", invento
               <AreaPropertyFilters
                 properties={areaProperties}
                 areaName={areaName}
-                advisorName={owner === "negin" ? "Negin Mohamadi" : "Ali Taghavi"}
-                phoneNumber={owner === "negin" ? "971505996547" : "971522950316"}
+                advisorName="Ali Taghavi"
+                phoneNumber="971522950316"
                 owner={owner}
-                sourcePage={`${owner === "negin" ? "Negin" : "Ali"} ${config.eyebrow} Area Page: ${areaName}`}
+                sourcePage={`Ali ${config.eyebrow} Area Page: ${areaName}`}
                 redirectBase={overviewPath}
                 redirectBaseByCategory={{
-                  all: owner === "negin" ? "/negin/listings" : "/listings",
-                  ready: owner === "negin" ? `/negin/areas/${areaSlug}` : `/areas/${areaSlug}`,
+                  all: "/listings",
+                  ready: `/areas/${areaSlug}`,
                   "off-plan": offPlanProjectsPathFor(owner),
                   "resale-off-plan": resaleOffPlanPathFor(owner)
                 }}

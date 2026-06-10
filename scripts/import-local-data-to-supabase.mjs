@@ -153,7 +153,7 @@ function mapProperty(property) {
     image_url: property.image_url || "",
     featured: Boolean(property.featured),
     whatsapp_link: property.whatsapp_link || "",
-    owner: property.owner === "negin" ? "negin" : "ali",
+    owner: "ali",
     category
   };
 }
@@ -174,14 +174,14 @@ function mapProject(project) {
     image: project.image || "",
     whatsapp_link: project.whatsappLink || "",
     featured: Boolean(project.featured),
-    owner: project.owner === "negin" ? "negin" : "ali"
+    owner: "ali"
   };
 }
 
 function mapArea(area) {
   return {
     id: area.id,
-    owner: area.owner === "negin" ? "negin" : "ali",
+    owner: "ali",
     slug: area.slug || "",
     name: area.name || area.area_name || "",
     area_name: area.area_name || area.name || "",
@@ -246,3 +246,4 @@ main().catch((error) => {
   console.error("[import-local-data-to-supabase]", error);
   process.exit(1);
 });
+

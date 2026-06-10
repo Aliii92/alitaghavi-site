@@ -17,9 +17,7 @@ function failure(error, status = 500) {
 }
 
 function revalidateAreaPaths(owner, slug = "") {
-  const paths = owner === "negin"
-    ? ["/negin", `/prime-areas/negin-${slug}`]
-    : ["/", `/prime-areas/${slug}`];
+  const paths = ["/", `/prime-areas/${slug}`];
   paths.filter(Boolean).forEach((path) => revalidatePath(path));
 }
 

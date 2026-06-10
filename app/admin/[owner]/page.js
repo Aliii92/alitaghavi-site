@@ -5,8 +5,7 @@ import { useParams, usePathname } from "next/navigation";
 import { formatPriceDisplay } from "../../../lib/price";
 
 const advisorConfig = {
-  ali: { label: "Ali Taghavi", siteUrl: "/", storageKey: "ali_admin_password" },
-  negin: { label: "Negin Mohamadi", siteUrl: "/negin", storageKey: "negin_admin_password" }
+  ali: { label: "Ali Taghavi", siteUrl: "/", storageKey: "ali_admin_password" }
 };
 
 const emptyProperty = {
@@ -525,6 +524,9 @@ export default function ScopedAdminPage() {
               </a>
               <a className="button secondary-button" href="/admin/blog">
                 Blog
+              </a>
+              <a className="button secondary-button" href="/admin/building-intelligence">
+                Building Lab
               </a>
               <a className="button secondary-button" href={`${basePath}/import-properties`}>
                 Bulk Import

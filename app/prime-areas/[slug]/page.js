@@ -7,10 +7,10 @@ import { localizePath } from "../../../lib/locale";
 import { getRequestLocale } from "../../../lib/server-locale";
 
 function NavBar({ owner = "ali", locale = "en" }) {
-  const homeHref = localizePath(owner === "negin" ? "/negin" : "/", locale);
-  const readyHref = localizePath(owner === "negin" ? "/negin/ready-properties" : "/ready-properties", locale);
-  const offPlanHref = localizePath(owner === "negin" ? "/negin/off-plan" : "/off-plan-projects", locale);
-  const resaleHref = localizePath(owner === "negin" ? "/negin/resale-off-plan" : "/resale-off-plan", locale);
+  const homeHref = localizePath("/", locale);
+  const readyHref = localizePath("/ready-properties", locale);
+  const offPlanHref = localizePath("/off-plan-projects", locale);
+  const resaleHref = localizePath("/resale-off-plan", locale);
   const areasHref = `${homeHref}#areas`;
   const contactHref = `${homeHref}#contact`;
   const aboutHref = `${homeHref}#advisory`;
@@ -24,9 +24,8 @@ function NavBar({ owner = "ali", locale = "en" }) {
         { href: offPlanHref, label: "Off-Plan Projects" },
         { href: resaleHref, label: "Resale Off-Plan" },
         { href: areasHref, label: "Prime Areas" },
-        { href: localizePath(owner === "negin" ? "/" : "/negin", locale), label: owner === "negin" ? "Ali Taghavi" : "Negin Mohamadi" },
         { href: contactHref, label: "Contact" },
-        { href: aboutHref, label: owner === "negin" ? "About Negin" : "About Me" }
+        { href: aboutHref, label: "About Me" }
       ]}
       locale={locale}
     />
@@ -52,13 +51,13 @@ export async function generateStaticParams() {
   const areas = await readAreas();
   return areas
     .filter((area) => area.active !== false)
-    .map((area) => ({ slug: area.owner === "negin" ? `negin-${area.slug}` : area.slug }));
+    .map((area) => ({ slug: area.slug }));
 }
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const owner = slug.startsWith("negin-") ? "negin" : "ali";
-  const areaSlug = owner === "negin" ? slug.replace(/^negin-/, "") : slug;
+  const owner = "ali";
+  const areaSlug = slug;
   const areas = await readAreas();
   const area = areas.find((item) => item.owner === owner && item.slug === areaSlug && item.active !== false);
   const title = area?.seo_title || (area ? `${area.area_name} Area Insight` : "Prime Area Insight");
@@ -68,12 +67,12 @@ export async function generateMetadata({ params }) {
     title,
     description,
     alternates: {
-      canonical: area ? `/prime-areas/${owner === "negin" ? `negin-${area.slug}` : area.slug}` : "/"
+      canonical: area ? `/prime-areas/${area.slug}` : "/"
     },
     openGraph: {
       title,
       description,
-      url: area ? `/prime-areas/${owner === "negin" ? `negin-${area.slug}` : area.slug}` : "/"
+      url: area ? `/prime-areas/${area.slug}` : "/"
     }
   };
 }
@@ -81,8 +80,8 @@ export async function generateMetadata({ params }) {
 export default async function PrimeAreaDetailPage({ params }) {
   const locale = await getRequestLocale();
   const { slug } = await params;
-  const owner = slug.startsWith("negin-") ? "negin" : "ali";
-  const areaSlug = owner === "negin" ? slug.replace(/^negin-/, "") : slug;
+  const owner = "ali";
+  const areaSlug = slug;
   const areas = await readAreas();
   const properties = await readProperties();
   const area = areas.find((item) => item.owner === owner && item.slug === areaSlug && item.active !== false);
@@ -111,7 +110,7 @@ export default async function PrimeAreaDetailPage({ params }) {
   const highlights = area.bullet_points || area.notes || [];
   const articleBody = sanitizeAreaHtml(area.content_body || "");
   const featuredImage = getImageSrc(area);
-  const homeHref = owner === "negin" ? "/negin" : "/";
+  const homeHref = "/";
   const backHref = `${homeHref}#areas`;
 
   return (
@@ -199,3 +198,4 @@ export default async function PrimeAreaDetailPage({ params }) {
     </main>
   );
 }
+

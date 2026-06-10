@@ -4,8 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 
 const advisorConfig = {
-  ali: { label: "Ali Taghavi", storageKey: "ali_admin_password" },
-  negin: { label: "Negin Mohamadi", storageKey: "negin_admin_password" }
+  ali: { label: "Ali Taghavi", storageKey: "ali_admin_password" }
 };
 
 const emptyArea = {
@@ -543,7 +542,7 @@ export default function AdminAreasPage() {
                     <div className="admin-row-actions">
                       <a
                         className="button secondary-button"
-                        href={`/prime-areas/${area.owner === "negin" ? `negin-${area.slug}` : area.slug}`}
+                        href={`/prime-areas/${area.slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >

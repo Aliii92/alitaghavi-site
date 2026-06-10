@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-const storageKeys = ["ali_admin_password", "negin_admin_password", "blog_admin_password"];
+const storageKeys = ["ali_admin_password", "blog_admin_password"];
 
 const emptyPost = {
   title_en: "",

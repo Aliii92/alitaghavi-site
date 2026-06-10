@@ -4,8 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 const advisorConfig = {
-  ali: { label: "Ali Taghavi", storageKey: "ali_admin_password" },
-  negin: { label: "Negin Mohamadi", storageKey: "negin_admin_password" }
+  ali: { label: "Ali Taghavi", storageKey: "ali_admin_password" }
 };
 
 const previewColumns = ["id", "title", "area", "building", "inventory_type", "property_type", "bedrooms", "size", "price", "status"];

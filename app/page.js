@@ -25,7 +25,6 @@ const content = {
       blog: "Market Insights",
       areas: "Prime Areas",
       advisory: "About Me",
-      negin: "Negin Mohamadi",
       contact: "Contact",
       toggle: "FA"
     },
@@ -161,13 +160,7 @@ const content = {
       cta: "Let's discuss your goals",
       imageClass: "advisory-image"
     },
-    partnership: {
-      eyebrow: "Working alongside Negin Mohamadi",
-      title: "Working with a trusted team",
-      text:
-        "I work closely with Negin Mohamadi to give clients a more thoughtful, responsive, and well-rounded advisory experience while keeping the process personal, discreet, and boutique.",
-      link: "Meet Negin Mohamadi"
-    },
+    partnership: null,
     testimonials: {
       eyebrow: "Client Perspective",
       title: "What discerning clients value most",
@@ -801,7 +794,6 @@ export default function HomePage() {
     { href: localizePath("/resale-off-plan", locale), label: t.nav.resale },
     { href: localizePath("/blog", locale), label: t.nav.blog || (locale === "fa" ? "تحلیل بازار" : "Market Insights") },
     { href: localizePath("/#areas", locale), label: t.nav.areas },
-    { href: localizePath("/negin", locale), label: t.nav.negin || "Negin Mohamadi" },
     { href: localizePath("/#contact", locale), label: t.nav.contact },
     { href: localizePath("/#advisory", locale), label: t.nav.advisory }
   ];
@@ -913,13 +905,7 @@ export default function HomePage() {
         photoSrc: "/ali-photo.png",
         photoAlt: "Ali Taghavi"
       }}
-      partnership={{
-        eyebrow: t.partnership.eyebrow,
-        title: t.partnership.title,
-        text: t.partnership.text,
-        href: localizePath("/negin", locale),
-        link: t.partnership.link
-      }}
+      partnership={t.partnership}
       testimonials={t.testimonials}
       contact={{
         eyebrow: t.contact.eyebrow,
@@ -1052,16 +1038,7 @@ export default function HomePage() {
 
         <AdvisorySection data={t.advisory} consultationLabel={t.advisory.cta} locale={locale} />
 
-        <section className="section partnership-section">
-          <div className="partnership-note">
-            <p className="section-eyebrow">{t.partnership.eyebrow}</p>
-            <h2>{t.partnership.title}</h2>
-            <p>{t.partnership.text}</p>
-            <a href={localizePath("/negin", locale)}>
-              {t.partnership.link}
-            </a>
-          </div>
-        </section>
+        {null}
 
         <section className="section section-testimonials">
           <SectionHeader
@@ -1211,3 +1188,4 @@ export default function HomePage() {
     </main>
   );
 }
+

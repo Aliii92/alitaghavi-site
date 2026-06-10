@@ -17,9 +17,7 @@ function failure(error, status = 500) {
 }
 
 function revalidateProjectPaths(owner) {
-  const paths = owner === "negin"
-    ? ["/negin", "/negin/off-plan", "/negin/projects"]
-    : ["/", "/off-plan-projects", "/projects"];
+  const paths = ["/", "/off-plan-projects", "/projects"];
   paths.forEach((path) => revalidatePath(path));
 }
 

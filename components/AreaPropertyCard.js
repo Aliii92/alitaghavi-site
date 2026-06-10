@@ -183,7 +183,7 @@ export default function AreaPropertyCard({
 }) {
   const pathname = usePathname();
   const copy = cardCopy[locale === "fa" ? "fa" : "en"];
-  const contextOwner = advisorFromPathname(pathname, advisorName === "Negin Mohamadi" ? "negin" : "ali");
+  const contextOwner = advisorFromPathname(pathname, "ali");
   const advisor = advisorForProperty({ owner: contextOwner }, advisorName, phoneNumber);
   const propertyArea = property.area || areaName;
   const bedroomLabel =
@@ -234,3 +234,4 @@ export default function AreaPropertyCard({
     </article>
   );
 }
+

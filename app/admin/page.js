@@ -9,9 +9,6 @@ export default function AdminLandingPage() {
           <a className="button primary-button" href="/admin/ali">
             Ali Admin
           </a>
-          <a className="button secondary-button" href="/admin/negin">
-            Negin Admin
-          </a>
         </div>
       </section>
     </main>
