@@ -22,36 +22,19 @@ async function writeLocalLeads(leads) {
 
 async function readLeads() {
   if (!hasSupabaseServerConfig()) {
+    if (process.env.NODE_ENV === "production") throw new Error("Lead storage unavailable");
     return readLocalLeads();
   }
-
-  try {
-    const rows = await supabaseSelect(leadsTable, { order: "created_at.desc" });
-    return Array.isArray(rows) ? rows : [];
-  } catch (error) {
-    console.warn("[api/leads:read] Falling back to local JSON:", error.message || error);
-    return readLocalLeads();
-  }
+  const rows = await supabaseSelect(leadsTable, { order: "created_at.desc" });
+  return Array.isArray(rows) ? rows : [];
 }
-
 async function writeLead(lead) {
   if (!hasSupabaseServerConfig()) {
-    const leads = await readLocalLeads();
-    leads.push(lead);
-    await writeLocalLeads(leads);
-    return lead;
+    if (process.env.NODE_ENV === "production") throw new Error("Lead storage unavailable");
+    const leads = await readLocalLeads(); leads.push(lead); await writeLocalLeads(leads); return lead;
   }
-
-  try {
-    await supabaseUpsert(leadsTable, [lead], "id");
-    return lead;
-  } catch (error) {
-    console.warn("[api/leads:write] Falling back to local JSON:", error.message || error);
-    const leads = await readLocalLeads();
-    leads.push(lead);
-    await writeLocalLeads(leads);
-    return lead;
-  }
+  await supabaseUpsert(leadsTable, [lead], "id");
+  return lead;
 }
 
 function getUtm(searchParams, key) {
@@ -73,12 +56,27 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const payload = await request.json();
-  const referrerUrl = payload.referrer_url || request.headers.get("referer") || "";
-  const searchParams = new URL(referrerUrl || "https://local.invalid").searchParams;
+  let payload;
+  try { payload = await request.json(); } catch { return NextResponse.json({ error: "Invalid request" }, { status: 400 }); }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  if (JSON.stringify(payload).length > 12000) return NextResponse.json({ error: "Request too large" }, { status: 413 });
+  payload = Object.fromEntries(Object.entries(payload).map(([key,value]) => [key, typeof value === "string" ? value.slice(0,3000) : ""]));
+  const consultation = payload.lead_type === "consultation";
+  if (consultation && (!String(payload.name || "").trim() || !/^[+0-9۰-۹٠-٩ ()-]{7,40}$/.test(String(payload.phone || "")))) {
+    return NextResponse.json({ error: "Please provide your name and a valid phone number" }, { status: 400 });
+  }
+  if (consultation && payload.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(payload.email))) return NextResponse.json({error:"Invalid email"},{status:400});
+  const text = (key, max = 1000) => typeof payload[key] === "string" ? payload[key].trim().slice(0, max) : "";
+  const referrerUrl = text("referrer_url", 2000) || request.headers.get("referer") || "";
+  let searchParams = new URLSearchParams();
+  try { searchParams = new URL(referrerUrl || "https://local.invalid").searchParams; } catch {}
   const lead = {
     id: `lead-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     owner: inferLeadOwner(payload),
+    lead_type: consultation ? "consultation" : "whatsapp_click",
+    name: text("name", 120), email: text("email", 254), phone: text("phone", 40),
+    purpose: text("purpose", 120), budget: text("budget", 120),
+    status: "new",
     created_at: new Date().toISOString(),
     advisor_name: payload.advisor_name || "",
     source_page: payload.source_page || "",
@@ -101,7 +99,21 @@ export async function POST(request) {
     utm_term: payload.utm_term || getUtm(searchParams, "utm_term")
   };
 
-  await writeLead(lead);
+  try { await writeLead(lead); } catch (error) { console.error("[leads:save]", error.message); return NextResponse.json({ error: "Could not save request. Please retry or contact us on WhatsApp." }, { status: 503 }); }
 
-  return NextResponse.json(lead, { status: 201 });
+  return NextResponse.json({ success: true, id: lead.id }, { status: 201 });
+}
+
+
+export async function PATCH(request) {
+  if (!ownerFromRequest(request)) return NextResponse.json({error:"Unauthorized"},{status:401});
+  try {
+    const {id,status} = await request.json();
+    if (!id || !["new","contacted","qualified","closed"].includes(status)) return NextResponse.json({error:"Invalid status"},{status:400});
+    const lead = (await readLeads()).find(item => item.id === id);
+    if (!lead) return NextResponse.json({error:"Lead not found"},{status:404});
+    if (hasSupabaseServerConfig()) await supabaseUpsert(leadsTable,[{...lead,status}],"id");
+    else { const leads = await readLocalLeads(); await writeLocalLeads(leads.map(item=>item.id === id ? {...item,status} : item)); }
+    return NextResponse.json({success:true});
+  } catch { return NextResponse.json({error:"Could not update lead"},{status:503}); }
 }

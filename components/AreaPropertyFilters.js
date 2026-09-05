@@ -1,4 +1,5 @@
 "use client";
+import { getNumericPrice } from "../lib/price";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -157,15 +158,7 @@ function localizeOptions(options, t, propertyType = false) {
   }));
 }
 
-function parsePrice(value) {
-  const raw = String(value || "").toLowerCase().replace(/,/g, "").replace(/aed|درهم/g, "");
-  const match = raw.match(/(\d+(?:\.\d+)?)/);
-  if (!match) return 0;
-
-  const amount = Number(match[1]);
-  if (raw.includes("m")) return amount * 1000000;
-  return amount;
-}
+const parsePrice = getNumericPrice;
 
 function parseBedroomCount(value) {
   const raw = String(value || "").trim().toLowerCase();
@@ -403,7 +396,6 @@ export default function AreaPropertyFilters({
         property.size,
         property.view,
         property.short_description,
-        property.notes,
         property.property_type,
         property.handoverDate,
         property.handover_date
@@ -646,3 +638,4 @@ export default function AreaPropertyFilters({
     </>
   );
 }
+

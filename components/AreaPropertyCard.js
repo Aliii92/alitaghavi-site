@@ -195,7 +195,7 @@ export default function AreaPropertyCard({
   const imageSrc = getPropertyImage(property);
   const categoryLabel = categoryLabelForProperty(property, copy);
   const occupancyLabel = occupancyLabelForProperty(property, copy);
-  const detailsHref = buildAreaWhatsAppUrl(property, areaName, advisor, locale);
+  const detailsHref = `${locale === "fa" ? "/fa" : ""}/properties/${encodeURIComponent(property.id)}`;
 
   return (
     <article className="listing-card compact-listing-card">
@@ -218,20 +218,22 @@ export default function AreaPropertyCard({
           </a>
         </h3>
         {specLine ? <p className="property-spec-line">{specLine}</p> : null}
-        <p className="compact-listing-detail">{buildOpportunityCopy(property, areaName, locale)}</p>
+        <p className="compact-listing-detail">{property.short_description || property.view || propertyArea}</p>
         <div className="price-row">
           <span>{copy.price}</span>
           <strong>{displayPrice}</strong>
         </div>
+        <a className="button secondary-button" href={detailsHref}>{copy.button}</a>
         <LeadWhatsAppButton
           className="button whatsapp-button"
           href={buildAreaWhatsAppUrl(property, areaName, advisor, locale)}
           lead={buildAreaLead(property, areaName, advisor, sourcePage, locale)}
         >
-          {copy.button}
+          {locale === "fa" ? "استعلام در واتساپ" : "Enquire on WhatsApp"}
         </LeadWhatsAppButton>
       </div>
     </article>
   );
 }
+
 

@@ -21,9 +21,16 @@ export function proxy(request) {
     });
   }
 
+  // Next may run the proxy again for the internal rewrite destination.
+  // Preserve only a Persian path that exactly maps to this destination.
+  const visible = request.headers.get("x-visible-pathname") || "";
+  const inheritedPersian = request.headers.get("x-locale") === "fa" &&
+    (visible === "/fa" || visible.startsWith("/fa/")) &&
+    (visible.replace(/^\/fa/, "") || "/") === pathname;
+
   return NextResponse.next({
     request: {
-      headers: buildHeaders(request, "en", pathname)
+      headers: buildHeaders(request, inheritedPersian ? "fa" : "en", inheritedPersian ? visible : pathname)
     }
   });
 }
@@ -31,3 +38,4 @@ export function proxy(request) {
 export const config = {
   matcher: ["/((?!api|_next|favicon.ico|robots.txt|sitemap.xml|.*\\..*).*)"]
 };
+

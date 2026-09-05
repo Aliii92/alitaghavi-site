@@ -1,26 +1,15 @@
 import { readAreas } from "../lib/areas.js";
-
+import { readProperties, isPubliclyVisibleProperty } from "../lib/properties.js";
+export const dynamic = "force-dynamic";
 export default async function sitemap() {
-  const baseUrl = "https://ali-taghavi.com";
-  const areas = await readAreas();
-  const staticRoutes = [
-    "",
-    "/ready-properties",
-    "/off-plan-projects"
-  ];
-
-  return [
-    ...staticRoutes.map((route) => ({
-      url: `${baseUrl}${route}`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: route === "" ? 1 : 0.8
-    })),
-    ...areas.map((area) => ({
-      url: `${baseUrl}/prime-areas/${area.slug}`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.7
-    }))
-  ];
+  const baseUrl = "https://www.alitaghavi.ae";
+  const [areas, properties] = await Promise.all([readAreas(), readProperties()]);
+  const routes = new Set(["", "/ready-properties", "/off-plan-projects", "/resale-off-plan", "/listings", "/blog",
+    ...areas.filter(area=>area.active !== false).map(area=>`/prime-areas/${encodeURIComponent(area.slug)}`),
+    ...properties.filter(isPubliclyVisibleProperty).map(property=>`/properties/${encodeURIComponent(property.id)}`)]);
+  return [...routes].flatMap(route=>["en","fa"].map(locale=>({
+    url: `${baseUrl}${locale === "fa" ? "/fa" : ""}${route}`,
+    changeFrequency: "weekly", priority: route === "" ? 1 : 0.7,
+    alternates: { languages: { en: `${baseUrl}${route}`, fa: `${baseUrl}/fa${route}` } }
+  })));
 }

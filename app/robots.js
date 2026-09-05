@@ -3,9 +3,10 @@ export default function robots() {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/admin", "/api"]
+      disallow: ["/admin", "/fa/admin", "/api"]
     },
-    sitemap: "https://ali-taghavi.com/sitemap.xml"
+    sitemap: "https://www.alitaghavi.ae/sitemap.xml"
   };
 }
+
 
