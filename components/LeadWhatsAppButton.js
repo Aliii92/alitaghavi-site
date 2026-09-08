@@ -9,8 +9,8 @@ export default function LeadWhatsAppButton({ href, lead, className = "button wha
     }
   }
 
-  async function handleClick(event) {
-    event.preventDefault();
+  function handleClick(event) {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
     const params = new URLSearchParams(window.location.search);
     const storedUtm = getStoredUtm();
@@ -25,19 +25,12 @@ export default function LeadWhatsAppButton({ href, lead, className = "button wha
       utm_term: params.get("utm_term") || storedUtm.utm_term || ""
     };
 
-    try {
-      await fetch("/api/leads", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      });
-    } catch {
-      // WhatsApp should still open even if local lead tracking fails.
-    }
+    // Keep normal anchor navigation immediate; tracking must never delay contact.
+    void fetch("/api/leads", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload), keepalive: true
+    }).catch(() => {});
 
-    window.location.href = href;
   }
 
   return (
@@ -46,3 +39,4 @@ export default function LeadWhatsAppButton({ href, lead, className = "button wha
     </a>
   );
 }
+

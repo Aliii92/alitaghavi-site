@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ownerFromRequest } from "../../../lib/adminAuth";
 import { hasSupabaseServerConfig, supabaseUploadPublicFile } from "../../../lib/supabase-server.js";
 
-const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
 
 function safeName(value) {
   return String(value || "property-image")
@@ -13,6 +13,7 @@ function safeName(value) {
 }
 
 function extensionFor(file) {
+  if (file.type === "application/pdf") return "pdf";
   if (file.type === "image/png") return "png";
   if (file.type === "image/webp") return "webp";
   return "jpg";
@@ -40,8 +41,10 @@ export async function POST(request) {
     }
 
     if (!allowedTypes.has(file.type)) {
-      return NextResponse.json({ success: false, error: "Only JPG, PNG, and WEBP images are allowed" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Only JPG, PNG, WEBP images and PDF documents are allowed" }, { status: 400 });
     }
+
+    if (file.size > 4 * 1024 * 1024) return NextResponse.json({ success:false,error:"Choose a file smaller than 4 MB." },{status:413});
 
     const filename = `${safeName(propertyId)}-${Date.now()}.${extensionFor(file)}`;
     const bytes = Buffer.from(await file.arrayBuffer());
@@ -73,3 +76,4 @@ export async function POST(request) {
     return NextResponse.json({ success: false, error: error.message || "Image upload failed." }, { status: 500 });
   }
 }
+

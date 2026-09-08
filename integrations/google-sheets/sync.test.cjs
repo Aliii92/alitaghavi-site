@@ -1,0 +1,23 @@
+const { readFileSync } = require('node:fs');
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const sandbox = {};
+vm.runInNewContext(readFileSync(__dirname+'/DubaiListing.gs','utf8'),sandbox);
+const header=['AREA','BUILDING','TYPE','BEDROOMS','BUA (SQFT)','PLOT (SQFT)','VIEW','STATUS','HANDOVER','PRICE (AED)','NOTES','Owner','Phone Number','Website ID','نمایش در سایت'];
+const row=['Palm Jumeirah','Building','Apartment','2 Bed','1,980','','Sea','Rented','Available','5,000,000','private notes','owner name','private phone','00000000-0000-4000-8000-000000000001',true];
+const map=(r)=>JSON.parse(JSON.stringify(sandbox.mapDubaiListingRow(r,header,'Palm Jumeirah')));
+assert.equal(map(row).status,'Available');
+assert.equal(map(row).category,'ready');
+assert.equal(map(row).price,'5,000,000');
+assert.equal(map(row).publish,true);
+const unavailable=row.slice();unavailable[8]='Not Available';assert.equal(map(unavailable).status,'hidden');
+const sold=row.slice();sold[8]='Sold';assert.equal(map(sold).status,'sold');
+const offplan=row.slice();offplan[7]='Off- plan';offplan[8]='Q4 2028';assert.equal(map(offplan).category,'resale-off-plan');assert.equal(map(offplan).handover,'Q4 2028');
+const soon=row.slice();soon[7]='Close to Handoer';assert.equal(map(soon).category,'resale-off-plan');
+const unchecked=row.slice();unchecked[14]=false;assert.equal(map(unchecked).publish,false);
+const payload=JSON.stringify(map(row));
+for(const secret of ['private notes','owner name','private phone']) assert.ok(!payload.includes(secret));
+// Column movement is safe because values are mapped by headers.
+const reverse=JSON.parse(JSON.stringify(sandbox.mapDubaiListingRow(row.slice().reverse(),header.slice().reverse(),'Palm Jumeirah')));
+assert.deepEqual(reverse,map(row));
+console.log('PASS: source mapping, rented/available, sold/unavailable, off-plan, checkbox, private-field exclusion, column movement');

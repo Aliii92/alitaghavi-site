@@ -1,3 +1,4 @@
+import { isPubliclyVisibleProperty } from "../../../lib/property-visibility";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { normalizeOwner, ownerFromRequest } from "../../../lib/adminAuth";
@@ -52,7 +53,9 @@ export async function GET(request) {
     const scopedProperties = owner ? properties.filter((property) => property.owner === owner) : properties;
 
     return success({
-      items: featuredOnly ? scopedProperties.filter((property) => property.featured) : scopedProperties
+      items: (featuredOnly ? scopedProperties.filter((property) => property.featured) : scopedProperties)
+        .filter(property => adminMode || isPubliclyVisibleProperty(property))
+        .map(property => { if (adminMode) return property; const { notes, ...publicProperty } = property; return publicProperty; })
     });
   } catch (error) {
     console.error("[api/properties:GET]", error);
@@ -181,3 +184,4 @@ export async function DELETE(request) {
     return failure(error.message || "Could not delete property from Supabase.", 500);
   }
 }
+

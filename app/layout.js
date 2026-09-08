@@ -1,10 +1,11 @@
+import { headers } from "next/headers";
 import "./globals.css";
 import UtmCapture from "../components/UtmCapture";
 import { getRequestLocale } from "../lib/server-locale";
 
-const siteUrl = "https://ali-taghavi.com";
+const siteUrl = "https://www.alitaghavi.ae";
 
-export const metadata = {
+const baseMetadata = {
   metadataBase: new URL(siteUrl),
   title: {
     default: "Ali Taghavi | Dubai Luxury Real Estate Advisor",
@@ -16,7 +17,7 @@ export const metadata = {
     canonical: "/",
     languages: {
       en: "/",
-      fa: "/?lang=fa"
+      fa: "/fa"
     }
   },
   openGraph: {
@@ -49,6 +50,15 @@ export const metadata = {
   }
 };
 
+export async function generateMetadata() {
+  const requestHeaders = await headers();
+  const visible = requestHeaders.get("x-visible-pathname") || "/";
+  const english = visible.replace(/^\/fa(?=\/|$)/, "") || "/";
+  const persian = english === "/" ? "/fa" : `/fa${english}`;
+  return { ...baseMetadata, alternates: { canonical: visible, languages: { en: english, fa: persian } },
+    openGraph: { ...baseMetadata.openGraph, url: visible, locale: visible.startsWith("/fa") ? "fa_IR" : "en_US" } };
+}
+
 export default async function RootLayout({ children }) {
   const locale = await getRequestLocale();
   const schema = {
@@ -76,3 +86,4 @@ export default async function RootLayout({ children }) {
     </html>
   );
 }
+

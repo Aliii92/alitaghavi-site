@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { usePathname } from "next/navigation";
 import LanguageSwitcher from "./LanguageSwitcher";
 
@@ -12,6 +12,8 @@ export default function ResponsiveNavbar({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const panelRef = useRef(null);
+  const triggerRef = useRef(null);
 
   useEffect(() => {
     setOpen(false);
@@ -23,7 +25,20 @@ export default function ResponsiveNavbar({
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
+    const focusable = panelRef.current?.querySelectorAll('a[href], button');
+    focusable?.[0]?.focus();
+    function onKey(event) {
+      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Tab" && focusable?.length) {
+        const first = focusable[0], last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }
+    }
+    document.addEventListener("keydown", onKey);
     return () => {
+      document.removeEventListener("keydown", onKey);
+      triggerRef.current?.focus();
       document.body.style.overflow = previousOverflow;
     };
   }, [open]);
@@ -52,7 +67,7 @@ export default function ResponsiveNavbar({
             <LanguageSwitcher locale={locale} className="desktop-language-switcher" />
             <button
               type="button"
-              className="nav-toggle"
+              className="nav-toggle" ref={triggerRef} aria-controls="mobile-navigation"
               aria-label={open ? "Close navigation menu" : "Open navigation menu"}
               aria-expanded={open}
               onClick={() => setOpen((current) => !current)}
@@ -67,7 +82,7 @@ export default function ResponsiveNavbar({
 
       {open ? (
         <div className="mobile-nav-overlay" onClick={closeMenu}>
-          <aside className="mobile-nav-panel" onClick={(event) => event.stopPropagation()}>
+          <aside id="mobile-navigation" ref={panelRef} role="dialog" aria-modal="true" aria-label={locale === "fa" ? "منوی اصلی" : "Main navigation"} className="mobile-nav-panel" onClick={(event) => event.stopPropagation()}>
             <div className="mobile-nav-header">
               <strong>{brandLabel}</strong>
               <button type="button" className="mobile-nav-close" aria-label="Close menu" onClick={closeMenu}>
@@ -93,3 +108,4 @@ export default function ResponsiveNavbar({
     </>
   );
 }
+

@@ -37,6 +37,18 @@ export default function ScopedLeadsPage() {
   const [leads, setLeads] = useState([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("all");
+  const [updatingId, setUpdatingId] = useState("");
+  const visibleLeads = leads.filter(lead => (status === "all" || (lead.status || "new") === status) &&
+    [lead.name,lead.phone,lead.email,lead.property_title,lead.source_page].join(" ").toLowerCase().includes(query.toLowerCase()));
+  async function updateStatus(id,status) {
+    setUpdatingId(id);
+    try {
+      await parseApiResponse(await fetch("/api/leads", {method:"PATCH",headers:{"Content-Type":"application/json","x-admin-password":storedPassword},body:JSON.stringify({id,status})}));
+      setLeads(current=>current.map(lead=>lead.id === id ? {...lead,status} : lead));
+    } catch (error) { setMessage(error.message); } finally { setUpdatingId(""); }
+  }
 
   useEffect(() => {
     const saved = window.localStorage.getItem(config.storageKey) || "";
@@ -132,20 +144,28 @@ export default function ScopedLeadsPage() {
 
         {message ? <div className="admin-message">{message}</div> : null}
 
+        <section className="admin-stats-grid">
+          <article className="admin-stat-card"><span>Consultation requests</span><strong>{leads.filter(l=>l.lead_type === "consultation").length}</strong></article>
+          <article className="admin-stat-card"><span>WhatsApp clicks</span><strong>{leads.filter(l=>l.lead_type !== "consultation").length}</strong></article>
+          <article className="admin-stat-card"><span>New consultations</span><strong>{leads.filter(l=>l.lead_type === "consultation" && (l.status || "new") === "new").length}</strong></article>
+        </section>
         <section className="admin-list-panel">
+          <div className="admin-filter-bar"><label><span>Search contacts or properties</span><input type="search" value={query} onChange={e=>setQuery(e.target.value)} /></label><label><span>Follow-up status</span><select value={status} onChange={e=>setStatus(e.target.value)}>{["all","new","contacted","qualified","closed"].map(s=><option key={s}>{s}</option>)}</select></label></div>
           <div className="admin-list-header">
             <h2>Tracked Leads</h2>
             <span className="admin-muted-label">{leads.length} records</span>
           </div>
           <div className="admin-leads-table">
-            {leads.map((lead) => (
+            {visibleLeads.map((lead) => (
               <article className="admin-lead-row" key={lead.id}>
                 <div>
                   <strong>{new Date(lead.created_at).toLocaleString()}</strong>
                   <span>{lead.language_mode}</span>
                 </div>
                 <div>
-                  <strong>{lead.advisor_name}</strong>
+                  <strong>{lead.name || (lead.lead_type === "consultation" ? "Consultation" : "WhatsApp click")}</strong>
+                  {lead.phone && <a href={`tel:${lead.phone.replace(/[^+0-9]/g, "")}`} dir="ltr">{lead.phone}</a>}
+                  {lead.email && <a href={`mailto:${lead.email}`}>{lead.email}</a>}
                   <span>{lead.source_page}</span>
                 </div>
                 <div>
@@ -153,18 +173,23 @@ export default function ScopedLeadsPage() {
                   <span>{lead.building || lead.area}</span>
                 </div>
                 <div>
-                  <strong>{lead.price}</strong>
+                  <strong>{lead.budget || lead.price}</strong>
+                  <span>{lead.purpose}</span>
                   <span>{lead.property_type}{lead.bedrooms ? ` | ${lead.bedrooms} BR` : ""}</span>
                 </div>
                 <div>
                   <strong>{lead.utm_source || "direct"}</strong>
                   <span>{[lead.utm_medium, lead.utm_campaign, lead.utm_content, lead.utm_term].filter(Boolean).join(" | ") || "No campaign details"}</span>
                 </div>
+                <div><label><span>Follow-up</span><select aria-label="Follow-up status" disabled={updatingId === lead.id} value={lead.status || "new"} onChange={e=>updateStatus(lead.id,e.target.value)}>{["new","contacted","qualified","closed"].map(s=><option key={s}>{s}</option>)}</select></label></div>
+                {lead.message_preview && <p className="admin-lead-message">{lead.message_preview}</p>}
               </article>
             ))}
+            {!visibleLeads.length && <p>No enquiries match your filters.</p>}
           </div>
         </section>
       </div>
     </main>
   );
 }
+

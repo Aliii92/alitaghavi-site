@@ -25,6 +25,8 @@ const emptyProperty = {
   notes: "",
   image_url: "",
   featured: false,
+  gallery_images: [],
+  floor_plan_url: "",
   whatsapp_link: ""
 };
 
@@ -87,11 +89,13 @@ export default function ScopedAdminPage() {
   const [properties, setProperties] = useState([]);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyProperty);
+  const [mediaUploading, setMediaUploading] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [adminSearch, setAdminSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [areaFilter, setAreaFilter] = useState("all");
   const [buildingFilter, setBuildingFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState(isResaleScope ? "resale-off-plan" : "all");
@@ -156,9 +160,9 @@ export default function ScopedAdminPage() {
         .toLowerCase();
       const matchesSearch = !normalizedSearch || searchable.includes(normalizedSearch);
 
-      return matchesArea && matchesBuilding && matchesCategory && matchesSearch;
+      return matchesArea && matchesBuilding && matchesCategory && matchesSearch && (statusFilter === "all" || property.status === statusFilter);
     });
-  }, [adminSearch, areaFilter, buildingFilter, categoryFilter, scopedProperties]);
+  }, [adminSearch, areaFilter, buildingFilter, categoryFilter, statusFilter, scopedProperties]);
   const groupedProperties = useMemo(() => {
     const areas = [];
     const byArea = new Map();
@@ -261,6 +265,7 @@ export default function ScopedAdminPage() {
   }
 
   function cancelEditing() {
+    if (mediaUploading) return;
     setEditing(null);
     setForm(emptyProperty);
     setImageFile(null);
@@ -309,6 +314,23 @@ export default function ScopedAdminPage() {
     });
     const data = await parseApiResponse(response);
     return extractImageUrl(data);
+  }
+
+  async function uploadMedia(event, kind) {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+    if (kind === "gallery" && files.length + (form.gallery_images || []).length > 30) { setMessage("Use at most 30 gallery images."); return; }
+    if (files.some(file=>file.size > 4 * 1024 * 1024)) { setMessage("Each file must be smaller than 4 MB."); return; }
+    setMediaUploading(true); setMessage("");
+    try {
+      for (const file of files) {
+        const body = new FormData(); body.append("image",file); body.append("propertyId", form.id);
+        const data = await parseApiResponse(await fetch("/api/uploads",{method:"POST",headers:{"x-admin-password":storedPassword},body}));
+        const url = extractImageUrl(data);
+        setForm(current=>kind === "floorplan" ? {...current,floor_plan_url:url} : {...current,gallery_images:[...(current.gallery_images || []),url]});
+      }
+      setMessage("Upload complete. Save the property to publish these files.");
+    } catch(error) { setMessage(error.message); } finally { setMediaUploading(false); event.target.value=""; }
   }
 
   async function saveProperty(event) {
@@ -374,6 +396,7 @@ export default function ScopedAdminPage() {
 
   function resetAdminFilters() {
     setAdminSearch("");
+    setStatusFilter("all");
     setAreaFilter("all");
     setBuildingFilter("all");
     setCategoryFilter(isResaleScope ? "resale-off-plan" : "all");
@@ -393,14 +416,14 @@ export default function ScopedAdminPage() {
           <label>
             <span>ID</span>
             <div className="admin-inline-field">
-              <input name="id" value={form.id} onChange={handleChange} required />
-              <button className="button secondary-button" type="button" onClick={autoId}>
+              <input name="id" value={form.id} onChange={handleChange} readOnly={editing !== "new"} required />
+              <button className="button secondary-button" type="button" disabled={editing !== "new"} onClick={autoId}>
                 Auto
               </button>
             </div>
           </label>
 
-          {["title", "area", "building", "bedrooms", "size", "price", "view", "furnishing", "status", "image_url", "whatsapp_link"].map((field) => (
+          {["title", "area", "building", "bedrooms", "size", "price", "view", "furnishing", "image_url", "whatsapp_link"].map((field) => (
             <label key={field}>
               <span>{field.replace(/_/g, " ")}</span>
               <input name={field} value={form[field] || ""} onChange={handleChange} required={["title", "area", "building", "price"].includes(field)} />
@@ -428,6 +451,11 @@ export default function ScopedAdminPage() {
             </div>
           </div>
 
+          <label><span>Status</span><select name="status" value={form.status} onChange={handleChange}>
+            {[...new Set(["Available", "Vacant", "Rented", "VOT", "Hidden", "Sold", form.status].filter(Boolean))].map(status => <option key={status}>{status}</option>)}
+          </select></label>
+          <label className="admin-wide-field"><span>Gallery photos (up to 30, each under 4 MB)</span><input type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={mediaUploading} onChange={e=>uploadMedia(e,"gallery")} /><span>Image URLs — one per line</span><textarea rows={4} value={(form.gallery_images || []).join("\n")} onChange={e => setForm(current => ({...current, gallery_images: e.target.value.split("\n")}))} /></label>
+          <label className="admin-wide-field"><span>Floor plan PDF (under 4 MB)</span><input type="file" accept="application/pdf" disabled={mediaUploading} onChange={e=>uploadMedia(e,"floorplan")} /><span>PDF URL</span><input type="url" name="floor_plan_url" value={form.floor_plan_url || ""} onChange={handleChange} placeholder="https://…" /></label>
           <label>
             <span>Inventory Type</span>
             <select name="category" value={form.category} onChange={handleChange}>
@@ -458,7 +486,7 @@ export default function ScopedAdminPage() {
           </label>
 
           <label className="admin-wide-field">
-            <span>Notes</span>
+            <span>Private notes (never displayed on the public site)</span>
             <textarea name="notes" value={form.notes || ""} onChange={handleChange} rows={3} />
           </label>
 
@@ -467,7 +495,7 @@ export default function ScopedAdminPage() {
             <span>Show as featured for {config.label}</span>
           </label>
 
-          <button className="button primary-button admin-save-button" type="submit" disabled={loading}>
+          <button className="button primary-button admin-save-button" type="submit" disabled={loading || mediaUploading}>
             {loading ? "Saving..." : "Save Property"}
           </button>
         </form>
@@ -553,8 +581,8 @@ export default function ScopedAdminPage() {
             <strong>{featuredCount}</strong>
           </article>
           <article className="admin-stat-card">
-            <span>Buildings</span>
-            <strong>{new Set(scopedProperties.map((property) => property.building)).size}</strong>
+            <span>Needs photos</span>
+            <strong>{scopedProperties.filter(property => !property.image_url).length}</strong>
           </article>
         </section>
 
@@ -581,6 +609,7 @@ export default function ScopedAdminPage() {
           </div>
 
           <div className="admin-filter-bar">
+            <label><span>Status</span><select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}><option value="all">All statuses</option>{[...new Set(scopedProperties.map(p => p.status))].filter(Boolean).sort().map(status=><option key={status}>{status}</option>)}</select></label>
             <label>
               <span>Search listings</span>
               <input
@@ -691,6 +720,7 @@ export default function ScopedAdminPage() {
                                           <span>{property.status}</span>
                                         </div>
                                         <div className="admin-row-actions">
+                                          <a className="button secondary-button" href={`/properties/${encodeURIComponent(property.id)}`} target="_blank" rel="noopener noreferrer">View</a>
                                           <button className="button secondary-button" type="button" onClick={() => startEdit(property)}>
                                             {editing === property.id ? "Editing" : "Edit"}
                                           </button>
@@ -724,3 +754,4 @@ export default function ScopedAdminPage() {
     </main>
   );
 }
+

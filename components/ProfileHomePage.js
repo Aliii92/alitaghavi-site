@@ -1,3 +1,5 @@
+import Image from "next/image";
+import AreaPropertyCard from "./AreaPropertyCard";
 import AreaPropertyFilters from "./AreaPropertyFilters";
 import ProjectImage from "./ProjectImage";
 import ResponsiveNavbar from "./ResponsiveNavbar";
@@ -132,7 +134,7 @@ function AdvisorySection({ data, locale = "en" }) {
             {data.cta}
           </a>
         </div>
-        <img className="advisory-photo" src={data.photoSrc} alt={data.photoAlt} />
+        <Image className="advisory-photo" src={data.photoSrc} alt={data.photoAlt} width={640} height={800} sizes="(max-width: 760px) 100vw, 40vw" />
       </div>
     </section>
   );
@@ -146,6 +148,7 @@ export default function ProfileHomePage({
   hero,
   search,
   featured,
+  selectedProperties = [],
   projects,
   areas,
   advisory,
@@ -173,6 +176,7 @@ export default function ProfileHomePage({
       />
 
       <section className="hero-section" id="home">
+        <Image src="/dubai-hero.png" alt={locale === "fa" ? "خط آسمان دبی" : "Dubai skyline"} fill priority sizes="100vw" className="hero-photograph" />
         <div className="hero-overlay"></div>
         <div className="hero-inner">
           <p className="hero-kicker">{hero.kicker}</p>
@@ -205,19 +209,15 @@ export default function ProfileHomePage({
         </section>
 
         <section className="section" id="featured">
-          <SectionHeader eyebrow={featured.eyebrow} title={featured.title} text={featured.text} className="featured-section-header" />
+          <SectionHeader eyebrow={locale === "fa" ? "منتخب علی تقوی" : "THE PRIVATE COLLECTION"}
+            title={locale === "fa" ? "ملک‌هایی که ارزش دیدن دارند" : "Exceptional homes. Considered choices."}
+            text={locale === "fa" ? "قیمت، متراژ و چشم‌انداز را ببینید؛ جزئیات هر ملک را جداگانه بررسی کنید." : "Explore the price, space and outlook. Get to know each property in detail."} />
           <div className="three-column-grid">
-            {featured.cards.map((card) => (
-              <LocationCard key={card.title} card={card} cta={featured.cta} locale={locale} />
-            ))}
+            {selectedProperties.length ? selectedProperties.map(property => (
+              <AreaPropertyCard key={property.id} property={property} areaName={property.area} locale={locale} sourcePage="Homepage collection" />
+            )) : featured.cards.map(card => <LocationCard key={card.title} card={card} cta={featured.cta} locale={locale} />)}
           </div>
-          {featured.moreHref ? (
-            <div className="more-options-row">
-              <a className="button secondary-button more-options-button" href={featured.moreHref}>
-                {featured.moreLabel}
-              </a>
-            </div>
-          ) : null}
+          <div className="more-options-row"><a className="button secondary-button" href={featured.moreHref}>{locale === "fa" ? "مشاهده همه املاک آماده" : "Explore ready properties"}</a></div>
         </section>
 
         <section className="section" id="projects">
@@ -283,15 +283,15 @@ export default function ProfileHomePage({
               <div className="form-grid">
                 <label>
                   <span>{contact.labels.name}</span>
-                  <input type="text" name="name" value={contact.values.name} onChange={contact.onChange} placeholder={contact.placeholders.name} />
+                  <input type="text" name="name" required autoComplete="name" maxLength={120} value={contact.values.name} onChange={contact.onChange} placeholder={contact.placeholders.name} />
                 </label>
                 <label>
                   <span>{contact.labels.email}</span>
-                  <input type="email" name="email" value={contact.values.email} onChange={contact.onChange} placeholder={contact.placeholders.email} />
+                  <input type="email" name="email" autoComplete="email" maxLength={254} value={contact.values.email} onChange={contact.onChange} placeholder={contact.placeholders.email} />
                 </label>
                 <label>
                   <span>{contact.labels.phone}</span>
-                  <input type="tel" name="phone" value={contact.values.phone} onChange={contact.onChange} placeholder={contact.placeholders.phone} />
+                  <input type="tel" name="phone" required autoComplete="tel" dir="ltr" maxLength={40} value={contact.values.phone} onChange={contact.onChange} placeholder={contact.placeholders.phone} />
                 </label>
                 <label>
                   <span>{contact.labels.purpose}</span>
@@ -318,9 +318,14 @@ export default function ProfileHomePage({
                 <textarea name="message" value={contact.values.message} onChange={contact.onChange} placeholder={contact.placeholders.message} rows={5}></textarea>
               </label>
 
-              <button type="submit" className="button primary-button full-button">
-                {contact.submit}
+              <button type="submit" disabled={contact.submitState === "sending"} className="button primary-button full-button">
+                {contact.submitState === "sending" ? (locale === "fa" ? "در حال ثبت…" : "Sending…") : contact.submit}
               </button>
+              <div role="status" aria-live="polite">
+                {contact.submitState === "success" && <p>{locale === "fa" ? "درخواست شما ثبت شد. برای ادامهٔ گفتگو می‌توانید در واتساپ پیام بدهید." : "Your request has been received. You can also continue on WhatsApp."}</p>}
+                {contact.submitState === "error" && <p>{locale === "fa" ? "درخواست ثبت نشد؛ دوباره تلاش کنید یا از واتساپ پیام بدهید." : "Your request could not be saved. Please retry or contact me on WhatsApp."}</p>}
+                {["success", "error"].includes(contact.submitState) && <a className="button secondary-button" href={contact.followUpHref} target="_blank" rel="noopener noreferrer">{locale === "fa" ? "ادامه در واتساپ" : "Continue on WhatsApp"}</a>}
+              </div>
             </form>
 
             <div className="contact-sidecards">
@@ -370,3 +375,4 @@ export default function ProfileHomePage({
     </main>
   );
 }
+
