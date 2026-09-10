@@ -189,8 +189,8 @@ export default function ProfileHomePage({
           </h1>
           <p className="hero-description">{hero.description}</p>
           <div className="hero-actions">
-            <a className="button whatsapp-button" href={hero.whatsappHref} target="_blank" rel="noopener noreferrer">
-              {hero.whatsappLabel}
+            <a className="button whatsapp-button" href="#property-search">
+              {locale === "fa" ? "پیدا کردن ملک" : "Find a property"}
             </a>
             <a className="button ghost-button" href={hero.consultationHref}>
               {hero.consultationLabel}
@@ -200,8 +200,8 @@ export default function ProfileHomePage({
       </section>
 
       <div className="content-shell">
-        <PropertyDealsSection properties={dealProperties} locale={locale} />
-        <section className="section homepage-search-section">
+
+        <section className="section homepage-search-section" id="property-search">
           <SectionHeader
             eyebrow={search.eyebrow}
             title={search.title}
@@ -211,7 +211,8 @@ export default function ProfileHomePage({
           <AreaPropertyFilters {...search.filtersProps} locale={locale} />
         </section>
 
-        <section className="section" id="featured">
+        <PropertyDealsSection properties={dealProperties} locale={locale} />
+        {selectedProperties.length > 0 && <section className="section" id="featured">
           <SectionHeader eyebrow={locale === "fa" ? "منتخب علی تقوی" : "THE PRIVATE COLLECTION"}
             title={locale === "fa" ? "ملک‌هایی که ارزش دیدن دارند" : "Exceptional homes. Considered choices."}
             text={locale === "fa" ? "قیمت، متراژ و چشم‌انداز را ببینید؛ جزئیات هر ملک را جداگانه بررسی کنید." : "Explore the price, space and outlook. Get to know each property in detail."} />
@@ -221,7 +222,7 @@ export default function ProfileHomePage({
             )) : featured.cards.map(card => <LocationCard key={card.title} card={card} cta={featured.cta} locale={locale} />)}
           </div>
           <div className="more-options-row"><a className="button secondary-button" href={featured.moreHref}>{locale === "fa" ? "مشاهده همه املاک آماده" : "Explore ready properties"}</a></div>
-        </section>
+        </section>}
 
         <section className="section" id="projects">
           <SectionHeader eyebrow={projects.eyebrow} title={projects.title} text={projects.text} className="offplan-section-header" />
@@ -261,7 +262,7 @@ export default function ProfileHomePage({
           </section>
         ) : null}
 
-        {testimonials?.items?.length ? (
+        {testimonials?.verified === true && testimonials?.items?.length ? (
           <section className="section section-testimonials">
             <SectionHeader eyebrow={testimonials.eyebrow} title={testimonials.title} />
             <div className="three-column-grid testimonial-grid">
@@ -288,37 +289,19 @@ export default function ProfileHomePage({
                   <span>{contact.labels.name}</span>
                   <input type="text" name="name" required autoComplete="name" maxLength={120} value={contact.values.name} onChange={contact.onChange} placeholder={contact.placeholders.name} />
                 </label>
-                <label>
-                  <span>{contact.labels.email}</span>
-                  <input type="email" name="email" autoComplete="email" maxLength={254} value={contact.values.email} onChange={contact.onChange} placeholder={contact.placeholders.email} />
-                </label>
+
                 <label>
                   <span>{contact.labels.phone}</span>
                   <input type="tel" name="phone" required autoComplete="tel" dir="ltr" maxLength={40} value={contact.values.phone} onChange={contact.onChange} placeholder={contact.placeholders.phone} />
                 </label>
-                <label>
-                  <span>{contact.labels.purpose}</span>
-                  <select name="purpose" value={contact.values.purpose} onChange={contact.onChange}>
-                    {contact.purposes.map((purpose) => (
-                      <option key={purpose} value={purpose}>
-                        {purpose}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  <span>{contact.labels.budget}</span>
-                  <input type="text" name="budget" value={contact.values.budget} onChange={contact.onChange} placeholder={contact.placeholders.budget} />
-                </label>
-                <label>
-                  <span>{contact.labels.area}</span>
-                  <input type="text" name="area" value={contact.values.area} onChange={contact.onChange} placeholder={contact.placeholders.area} />
-                </label>
+
+
+
               </div>
 
               <label className="full-width">
                 <span>{contact.labels.message}</span>
-                <textarea name="message" value={contact.values.message} onChange={contact.onChange} placeholder={contact.placeholders.message} rows={5}></textarea>
+                <textarea name="message" value={contact.values.message} onChange={contact.onChange} placeholder={contact.placeholders.message} rows={3}></textarea>
               </label>
 
               <button type="submit" disabled={contact.submitState === "sending"} className="button primary-button full-button">

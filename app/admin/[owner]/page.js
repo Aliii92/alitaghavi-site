@@ -491,6 +491,8 @@ export default function ScopedAdminPage() {
             <textarea name="notes" value={form.notes || ""} onChange={handleChange} rows={3} />
           </label>
 
+          <label><span>Plot size (sq ft) / متراژ پلات</span><input name="plot_size" value={form.plot_size || ""} onChange={handleChange} /></label>
+          <label><span>Property video URL / لینک ویدئوی ملک</span><input type="url" name="video_url" value={form.video_url || ""} onChange={handleChange} /></label>
           <label className="admin-wide-field">
             <span>Special opportunity / نوع فرصت ویژه</span>
             <select value={form.deal?.type || ""} onChange={event => setForm(current => ({...current, deal: {...current.deal, type: event.target.value}}))}>

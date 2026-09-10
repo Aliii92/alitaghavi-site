@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import "./globals.css";
+import { PropertyPreferences } from "../components/PropertyPreferences";
 import UtmCapture from "../components/UtmCapture";
 import { getRequestLocale } from "../lib/server-locale";
 
@@ -81,7 +82,7 @@ export default async function RootLayout({ children }) {
       <body suppressHydrationWarning>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
         <UtmCapture />
-        {children}
+        <PropertyPreferences>{children}</PropertyPreferences>
       </body>
     </html>
   );

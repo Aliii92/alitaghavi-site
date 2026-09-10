@@ -1,5 +1,6 @@
 "use client";
 
+import PropertySaveActions from "./PropertySaveActions";
 import PropertyDealBadge from "./PropertyDealBadge";
 import { usePathname } from "next/navigation";
 import LeadWhatsAppButton from "./LeadWhatsAppButton";
@@ -38,7 +39,7 @@ const cardCopy = {
     residence: "residence"
   },
   fa: {
-    available: "آماده بازدید",
+    available: "موجود",
     vacant: "خالی",
     rented: "اجاره رفته",
     vot: "خالی در زمان انتقال",
@@ -93,7 +94,7 @@ function occupancyLabelForProperty(property, copy) {
   if (raw === "vacant") return copy.vacant;
   if (raw === "rented") return copy.rented;
   if (raw === "vot") return copy.vot;
-  return raw ? property.status : copy.available;
+  return ["available", "ready", ""].includes(raw) ? copy.available : property.status;
 }
 
 function titleIncludesBedroomInfo(title, bedrooms) {
@@ -191,7 +192,7 @@ export default function AreaPropertyCard({
     property.bedrooms && !titleIncludesBedroomInfo(property.title, property.bedrooms)
       ? `${property.bedrooms} ${copy.br}`
       : "";
-  const specLine = [bedroomLabel, property.size, property.view].filter(Boolean).join(" • ");
+  const specLine = [property.bedrooms ? `${property.bedrooms.replace(/beds?|bedrooms?/gi, "").trim()} ${copy.br}` : "", property.size ? `${property.size} ${locale === "fa" ? "فوت مربع" : "sq ft"}` : ""].filter(Boolean).join(" • ");
   const displayPrice = formatPriceDisplay(property.price, { locale });
   const imageSrc = getPropertyImage(property);
   const categoryLabel = categoryLabelForProperty(property, copy);
@@ -208,6 +209,7 @@ export default function AreaPropertyCard({
         />
       </a>
       <div className="listing-content">
+        <PropertySaveActions propertyId={property.id} locale={locale} />
         <PropertyDealBadge property={property} locale={locale} />
         <div className="compact-card-topline">
           <span className="listing-label">{categoryLabel}</span>
@@ -216,11 +218,11 @@ export default function AreaPropertyCard({
         </div>
         <h3>
           <a className="property-card-link-shell property-card-title-link" href={detailsHref}>
-            {property.title}
+            {property.building || property.title}
           </a>
         </h3>
         {specLine ? <p className="property-spec-line">{specLine}</p> : null}
-        <p className="compact-listing-detail">{property.short_description || property.view || propertyArea}</p>
+        <p className="compact-listing-detail">{[propertyArea, property.view].filter(Boolean).join(" · ")}</p>
         <div className="price-row">
           <span>{copy.price}</span>
           <strong>{displayPrice}</strong>

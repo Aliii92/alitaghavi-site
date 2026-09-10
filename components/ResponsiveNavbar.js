@@ -64,6 +64,7 @@ export default function ResponsiveNavbar({
           </div>
 
           <div className="topbar-controls">
+            <a className="saved-nav" href={`${locale === "fa" ? "/fa" : ""}/saved`}>{locale === "fa" ? "ذخیره‌ها و مقایسه" : "Saved & compare"}</a>
             <LanguageSwitcher locale={locale} className="desktop-language-switcher" />
             <button
               type="button"

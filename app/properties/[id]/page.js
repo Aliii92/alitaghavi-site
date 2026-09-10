@@ -4,6 +4,8 @@ import Image from "next/image";
 import { readProperties, isPubliclyVisibleProperty } from "../../../lib/properties";
 import { getRequestLocale } from "../../../lib/server-locale";
 import { localizePath } from "../../../lib/locale";
+import PropertyGallery from "../../../components/PropertyGallery";
+import PropertySaveActions from "../../../components/PropertySaveActions";
 import PropertyDealBadge from "../../../components/PropertyDealBadge";
 import { formatPriceDisplay } from "../../../lib/price";
 import { getPropertyImage } from "../../../lib/get-image-src";
@@ -32,7 +34,7 @@ export default async function PropertyPage({ params }) {
   const pageUrl = `https://www.alitaghavi.ae${href(`/properties/${encodeURIComponent(id)}`)}`;
   const message = `${fa ? "سلام علی، درباره این ملک اطلاعات بیشتری می‌خواهم:" : "Hi Ali, I would like more details about this property:"}\n${property.title}\n${property.building} · ${property.area}\n${formatPriceDisplay(property.price, { locale })}\n${pageUrl}`;
   const whatsapp = `https://wa.me/971522950316?text=${encodeURIComponent(message)}`;
-  const specs = [[fa ? "تعداد خواب" : "Bedrooms",property.bedrooms], [fa ? "متراژ" : "Size",property.size], [fa ? "چشم‌انداز" : "View",property.view], [fa ? "مبلمان" : "Furnishing",property.furnishing], [fa ? "وضعیت" : "Status",property.status], [fa ? "تحویل" : "Handover",property.handover]].filter(([,v])=>v);
+  const specs = [[fa ? "تعداد خواب" : "Bedrooms",property.bedrooms], [fa ? "زیربنا (فوت مربع)" : "Built-up area (sq ft)",property.size], [fa ? "پلات (فوت مربع)" : "Plot (sq ft)",property.plot_size], [fa ? "چشم‌انداز" : "View",property.view], [fa ? "مبلمان" : "Furnishing",property.furnishing], [fa ? "وضعیت" : "Status",({Available:fa?"موجود":"Available",ready:fa?"آماده":"Ready",vacant:fa?"خالی":"Vacant"})[property.status]||property.status], [fa ? "تحویل" : "Handover",property.handover]].filter(([,v])=>v);
   const images = [...new Set([getPropertyImage(property), ...(property.gallery_images || [])])];
   return <main className={`luxury-page property-detail ${fa ? "rtl" : ""}`}>
     <ResponsiveNavbar brandLabel="Ali Taghavi" brandHref={href("/")} locale={locale} links={[{ href:href("/ready-properties"),label:fa ? "املاک آماده" : "Ready properties" },{href:href("/resale-off-plan"),label:fa ? "ریسل آف‌پلن" : "Resale off-plan"},{href:href("/#contact"),label:fa ? "مشاوره" : "Consultation"}]} />
@@ -40,11 +42,14 @@ export default async function PropertyPage({ params }) {
       <a className="detail-back" href={href("/listings")}>{fa ? "بازگشت به املاک" : "Back to properties"}</a>
       <PropertyDealBadge property={property} locale={locale} details />
       <div className="detail-heading"><div><p className="section-eyebrow">{property.area} / {property.building}</p><h1>{property.title}</h1></div><strong className="detail-price" dir="ltr">{formatPriceDisplay(property.price,{locale})}</strong></div>
-      <div className="detail-main-image"><Image src={images[0]} alt={property.title} fill priority sizes="(max-width: 760px) 100vw, 1200px" unoptimized={!images[0].startsWith("/")} /></div>
-      {images.length > 1 && <div className="detail-gallery">{images.slice(1).map((src,i)=><a href={src} key={src} target="_blank" rel="noopener noreferrer"><Image src={src} width={500} height={360} unoptimized alt={`${property.title} — ${i+2}`} /></a>)}</div>}
+      <PropertySaveActions propertyId={id} locale={locale} />
+      <PropertyGallery images={images} title={property.title} locale={locale} />
       <div className="detail-columns"><section><h2>{fa ? "جزئیات ملک" : "The details"}</h2><dl className="detail-specs">{specs.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>{property.short_description && <p className="detail-description">{property.short_description}</p>}
         {property.floor_plan_url && <a className="button secondary-button" href={property.floor_plan_url} target="_blank" rel="noopener noreferrer">{fa ? "مشاهده پلان کامل PDF" : "View full floor plan PDF"}</a>}
+        <a className="button secondary-button" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([property.building,property.area,"Dubai"].join(", "))}`} target="_blank" rel="noopener noreferrer">{fa ? "جست‌وجوی ساختمان روی نقشه" : "Find the building on Maps"}</a>
+        {property.video_url && <a className="button secondary-button" href={property.video_url} target="_blank" rel="noopener noreferrer">{fa ? "تماشای ویدئوی ملک" : "Watch property video"}</a>}
       </section><aside className="detail-enquiry"><p className="section-eyebrow">ALI TAGHAVI</p><h2>{fa ? "این ملک را بیشتر بشناسید" : "Picture yourself here."}</h2><p>{fa ? "برای تأیید موجودی، هماهنگی بازدید و بررسی گزینه‌های مشابه، مستقیم با من گفتگو کنید." : "Ask about availability, arrange a viewing, or discuss similar properties."}</p><LeadWhatsAppButton className="button whatsapp-button" href={whatsapp} lead={{ property_id:id,property_title:property.title,area:property.area,building:property.building,price:property.price,source_page:"Property details",language_mode:locale.toUpperCase(),message_preview:message }}>{fa ? "گفتگو با علی در واتساپ" : "Enquire with Ali"}</LeadWhatsAppButton><a className="detail-phone" href="tel:+971522950316" dir="ltr">+971 52 295 0316</a></aside></div>
     </div>
+    <div className="mobile-property-contact"><span>{formatPriceDisplay(property.price,{locale})}</span><LeadWhatsAppButton href={whatsapp} lead={{property_id:id,property_title:property.title,source_page:"Mobile property details",language_mode:locale.toUpperCase()}}>{fa ? "جزئیات این ملک را می‌خواهم" : "Send me the details"}</LeadWhatsAppButton></div>
   </main>;
 }

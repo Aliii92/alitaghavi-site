@@ -813,7 +813,7 @@ export default function HomePage({ initialLocale = "en" }) {
   useEffect(() => {
     fetch("/api/properties?owner=ali")
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-      .then(data => { const items = extractApiItems(data); setDealProperties(items); setSelectedProperties(items.filter(p => p.featured).slice(0, 6)); })
+      .then(data => { const items = extractApiItems(data); setDealProperties(items); setSelectedProperties([...items.filter(p => p.featured), ...items.filter(p => !p.featured)].slice(0, 6)); })
       .catch(() => setSelectedProperties([]));
   }, []);
 
