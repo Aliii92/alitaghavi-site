@@ -4,6 +4,7 @@ import Image from "next/image";
 import { readProperties, isPubliclyVisibleProperty } from "../../../lib/properties";
 import { getRequestLocale } from "../../../lib/server-locale";
 import { localizePath } from "../../../lib/locale";
+import PropertyDealBadge from "../../../components/PropertyDealBadge";
 import { formatPriceDisplay } from "../../../lib/price";
 import { getPropertyImage } from "../../../lib/get-image-src";
 import ResponsiveNavbar from "../../../components/ResponsiveNavbar";
@@ -37,6 +38,7 @@ export default async function PropertyPage({ params }) {
     <ResponsiveNavbar brandLabel="Ali Taghavi" brandHref={href("/")} locale={locale} links={[{ href:href("/ready-properties"),label:fa ? "املاک آماده" : "Ready properties" },{href:href("/resale-off-plan"),label:fa ? "ریسل آف‌پلن" : "Resale off-plan"},{href:href("/#contact"),label:fa ? "مشاوره" : "Consultation"}]} />
     <div className="content-shell detail-shell">
       <a className="detail-back" href={href("/listings")}>{fa ? "بازگشت به املاک" : "Back to properties"}</a>
+      <PropertyDealBadge property={property} locale={locale} details />
       <div className="detail-heading"><div><p className="section-eyebrow">{property.area} / {property.building}</p><h1>{property.title}</h1></div><strong className="detail-price" dir="ltr">{formatPriceDisplay(property.price,{locale})}</strong></div>
       <div className="detail-main-image"><Image src={images[0]} alt={property.title} fill priority sizes="(max-width: 760px) 100vw, 1200px" unoptimized={!images[0].startsWith("/")} /></div>
       {images.length > 1 && <div className="detail-gallery">{images.slice(1).map((src,i)=><a href={src} key={src} target="_blank" rel="noopener noreferrer"><Image src={src} width={500} height={360} unoptimized alt={`${property.title} — ${i+2}`} /></a>)}</div>}

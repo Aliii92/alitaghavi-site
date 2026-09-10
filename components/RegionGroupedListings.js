@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { comparePropertyDeals, sortPropertiesByDeals } from "../lib/property-deals.js";
 import AreaPropertyCard from "./AreaPropertyCard";
 
 const copyByLocale = {
@@ -76,7 +77,8 @@ export default function RegionGroupedListings({
 
     return [...byRegion.values()]
       .filter((group) => group.items.length >= minimumProperties)
-      .sort((left, right) => right.items.length - left.items.length || left.name.localeCompare(right.name));
+      .map(group => ({ ...group, items: sortPropertiesByDeals(group.items) }))
+      .sort((left, right) => comparePropertyDeals(left.items[0], right.items[0]) || right.items.length - left.items.length || left.name.localeCompare(right.name));
   }, [minimumProperties, properties]);
 
   if (!regionGroups.length) {

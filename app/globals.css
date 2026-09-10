@@ -3475,3 +3475,12 @@ html[lang="fa"] .section-header h2 { line-height:1.7; }
  .admin-header { flex-direction:column; align-items:stretch; } .admin-actions { flex-wrap:wrap; }
 }
 @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *,*::before,*::after { transition:none!important; animation:none!important; } }
+
+/* Quiet, high-contrast editorial treatment for selected opportunities. */
+.property-deals-section { scroll-margin-top: 90px; }
+.property-deal-info { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.property-deal-badge { display: inline-flex; border: 1px solid #a7cec3; background: #eaf5f0; color: #145642; border-radius: 6px; padding: 6px 10px; font-size: 13px; font-weight: 700; line-height: 1.5; }
+.deal-urgent, .deal-distress { color: #8a3b2f; border-color: #e3bfb7; background: #fcf0ec; }
+.property-deal-saving { font-size: 13px; color: #145642; font-weight: 600; }
+.property-deal-reference { flex-basis: 100%; margin: 0; font-size: 13px; }
+.property-deal-reference a { text-decoration: underline; }

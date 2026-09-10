@@ -1,4 +1,5 @@
 "use client";
+import { comparePropertyDeals } from "../lib/property-deals.js";
 import { getNumericPrice } from "../lib/price";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -45,6 +46,7 @@ const searchCopy = {
     anyHandover: "Any handover",
     propertiesFound: (count) => `${count} properties found`,
     sortLabel: "Sort",
+    recommended: "Special offers first",
     newest: "Newest",
     priceLowHigh: "Price low to high",
     priceHighLow: "Price high to low",
@@ -93,6 +95,7 @@ const searchCopy = {
     anyHandover: "هر زمان تحویل",
     propertiesFound: (count) => `${count} ملک یافت شد`,
     sortLabel: "مرتب‌سازی",
+    recommended: "فرصت‌های ویژه اول",
     newest: "جدیدترین",
     priceLowHigh: "قیمت از کم به زیاد",
     priceHighLow: "قیمت از زیاد به کم",
@@ -333,7 +336,7 @@ export default function AreaPropertyFilters({
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [handover, setHandover] = useState("all");
-  const [sortBy, setSortBy] = useState("newest");
+  const [sortBy, setSortBy] = useState("recommended");
   const [activeDropdown, setActiveDropdown] = useState("");
   const shouldShowResults = showResults || searchSubmitted;
   const routeMap = useMemo(
@@ -359,7 +362,7 @@ export default function AreaPropertyFilters({
     setMinPrice(params.get("min_price") || "");
     setMaxPrice(params.get("max_price") || "");
     setHandover(params.get("handover") || "all");
-    setSortBy(params.get("sort") || "newest");
+    setSortBy(params.get("sort") || "recommended");
   }, [defaultCategory]);
 
   const filteredProperties = useMemo(() => {
@@ -410,6 +413,10 @@ export default function AreaPropertyFilters({
 
     const withIndex = nextProperties.map((property, index) => ({ property, index }));
     withIndex.sort((left, right) => {
+      if (sortBy === "recommended") {
+        const priority = comparePropertyDeals(left.property, right.property);
+        if (priority) return priority;
+      }
       if (sortBy === "price-low") {
         return parsePrice(left.property.price) - parsePrice(right.property.price);
       }
@@ -448,7 +455,7 @@ export default function AreaPropertyFilters({
     if (nextMinPrice) params.set("min_price", nextMinPrice);
     if (nextMaxPrice) params.set("max_price", nextMaxPrice);
     if (["off-plan", "resale-off-plan"].includes(nextCategory) && nextHandover !== "all") params.set("handover", nextHandover);
-    if (sortBy !== "newest") params.set("sort", sortBy);
+    if (sortBy !== "recommended") params.set("sort", sortBy);
     const queryString = params.toString();
     return `${targetBase}${queryString ? `?${queryString}` : ""}`;
   }
@@ -477,7 +484,7 @@ export default function AreaPropertyFilters({
     setMinPrice("");
     setMaxPrice("");
     setHandover("all");
-    setSortBy("newest");
+    setSortBy("recommended");
     setSearchSubmitted(showResults);
 
     const clearBase = routeMap[defaultCategory] || redirectBase;
@@ -591,6 +598,7 @@ export default function AreaPropertyFilters({
           <label className="property-sort-control">
             <span>{t.sortLabel}</span>
             <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+              <option value="recommended">{t.recommended}</option>
               <option value="newest">{t.newest}</option>
               <option value="price-low">{t.priceLowHigh}</option>
               <option value="price-high">{t.priceHighLow}</option>

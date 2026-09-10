@@ -758,6 +758,7 @@ export default function HomePage({ initialLocale = "en" }) {
   const [editableAreas, setEditableAreas] = useState([]);
   const [offPlanProjects, setOffPlanProjects] = useState([]);
   const [selectedProperties, setSelectedProperties] = useState([]);
+  const [dealProperties, setDealProperties] = useState([]);
   const [submitState, setSubmitState] = useState("idle");
   const [formData, setFormData] = useState({
     name: "",
@@ -810,9 +811,9 @@ export default function HomePage({ initialLocale = "en" }) {
   }, [locale, t.dir]);
 
   useEffect(() => {
-    fetch("/api/properties?featured=true&owner=ali")
+    fetch("/api/properties?owner=ali")
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-      .then(data => setSelectedProperties(extractApiItems(data).slice(0, 6)))
+      .then(data => { const items = extractApiItems(data); setDealProperties(items); setSelectedProperties(items.filter(p => p.featured).slice(0, 6)); })
       .catch(() => setSelectedProperties([]));
   }, []);
 
@@ -863,6 +864,7 @@ export default function HomePage({ initialLocale = "en" }) {
 
   return (
     <ProfileHomePage
+      dealProperties={dealProperties}
       locale={locale}
       brandLabel="Ali Taghavi"
       brandHref={localizePath("/#home", locale)}

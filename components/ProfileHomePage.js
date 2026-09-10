@@ -1,5 +1,6 @@
 import Image from "next/image";
 import AreaPropertyCard from "./AreaPropertyCard";
+import PropertyDealsSection from "./PropertyDealsSection";
 import AreaPropertyFilters from "./AreaPropertyFilters";
 import ProjectImage from "./ProjectImage";
 import ResponsiveNavbar from "./ResponsiveNavbar";
@@ -149,6 +150,7 @@ export default function ProfileHomePage({
   search,
   featured,
   selectedProperties = [],
+  dealProperties = [],
   projects,
   areas,
   advisory,
@@ -198,6 +200,7 @@ export default function ProfileHomePage({
       </section>
 
       <div className="content-shell">
+        <PropertyDealsSection properties={dealProperties} locale={locale} />
         <section className="section homepage-search-section">
           <SectionHeader
             eyebrow={search.eyebrow}

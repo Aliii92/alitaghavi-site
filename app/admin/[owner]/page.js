@@ -25,6 +25,7 @@ const emptyProperty = {
   notes: "",
   image_url: "",
   featured: false,
+  deal: { type: "", reference_price: "", reference_url: "", verified_at: "", expires_at: "" },
   gallery_images: [],
   floor_plan_url: "",
   whatsapp_link: ""
@@ -489,6 +490,25 @@ export default function ScopedAdminPage() {
             <span>Private notes (never displayed on the public site)</span>
             <textarea name="notes" value={form.notes || ""} onChange={handleChange} rows={3} />
           </label>
+
+          <label className="admin-wide-field">
+            <span>Special opportunity / نوع فرصت ویژه</span>
+            <select value={form.deal?.type || ""} onChange={event => setForm(current => ({...current, deal: {...current.deal, type: event.target.value}}))}>
+              <option value="">Standard / عادی</option>
+              <option value="distress">Distress / دیسترس</option>
+              <option value="urgent">Urgent sale / فروش فوری</option>
+              <option value="below-market">Below market / زیر قیمت بازار</option>
+            </select>
+          </label>
+          {form.deal?.type && <>
+            <label><span>Offer expiry / پایان نمایش ویژه</span><input type="date" value={form.deal?.expires_at || ""} onChange={event => setForm(current => ({...current, deal: {...current.deal, expires_at: event.target.value}}))} /></label>
+            {form.deal.type === "below-market" && <>
+              <label><span>Reference price (AED) / قیمت مرجع</span><input value={form.deal?.reference_price || ""} onChange={event => setForm(current => ({...current, deal: {...current.deal, reference_price: event.target.value}}))} /></label>
+              <label><span>Public comparison URL / لینک عمومی مقایسه</span><input type="url" value={form.deal?.reference_url || ""} onChange={event => setForm(current => ({...current, deal: {...current.deal, reference_url: event.target.value}}))} /></label>
+              <label><span>Price checked on / تاریخ بررسی قیمت</span><input type="date" value={form.deal?.verified_at || ""} onChange={event => setForm(current => ({...current, deal: {...current.deal, verified_at: event.target.value}}))} /></label>
+              <p className="admin-wide-field">The discount appears only with a higher reference price, a public HTTPS source and a check within 30 days. Otherwise the listing shows as a special opportunity.</p>
+            </>}
+          </>}
 
           <label className="admin-checkbox-field">
             <input type="checkbox" name="featured" checked={Boolean(form.featured)} onChange={handleChange} />

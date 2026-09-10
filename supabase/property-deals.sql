@@ -1,22 +1,5 @@
--- Direct Dubai Listing sync. Run via a reviewed Supabase migration.
-create table if not exists public.listing_sync_settings (
-  singleton boolean primary key default true check (singleton),
-  token_hash text not null,
-  enabled boolean not null default false,
-  last_sent_at timestamptz,
-  last_synced_at timestamptz,
-  last_count integer
-);
-create table if not exists public.listing_sheet_records (
-  source_id uuid primary key,
-  property_id text not null unique,
-  source_tab text not null,
-  last_synced_at timestamptz
-);
-alter table public.listing_sync_settings enable row level security;
-alter table public.listing_sheet_records enable row level security;
-revoke all on public.listing_sync_settings, public.listing_sheet_records from public, anon, authenticated;
-grant select, insert, update, delete on public.listing_sync_settings, public.listing_sheet_records to service_role;
+alter table public.properties add column if not exists deal jsonb default '{}'::jsonb;
+alter table public.resale_off_plan add column if not exists deal jsonb default '{}'::jsonb;
 
 create or replace function public.apply_listing_sheet_sync(p_rows jsonb, p_sent_at timestamptz)
 returns jsonb language plpgsql security invoker set search_path = '' as $$

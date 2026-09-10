@@ -1,5 +1,6 @@
 "use client";
 
+import PropertyDealBadge from "./PropertyDealBadge";
 import { usePathname } from "next/navigation";
 import LeadWhatsAppButton from "./LeadWhatsAppButton";
 import ProjectImage from "./ProjectImage";
@@ -207,6 +208,7 @@ export default function AreaPropertyCard({
         />
       </a>
       <div className="listing-content">
+        <PropertyDealBadge property={property} locale={locale} />
         <div className="compact-card-topline">
           <span className="listing-label">{categoryLabel}</span>
           <span className="listing-badge">{property.building || propertyArea}</span>

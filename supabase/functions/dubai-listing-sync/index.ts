@@ -28,8 +28,13 @@ Deno.serve(async (req: Request) => {
     if (body.spreadsheet_id !== SHEET_ID || !Array.isArray(body.rows) || body.rows.length > 2000 || !Number.isFinite(Date.parse(body.sent_at))) return reply({ error: 'Invalid payload' }, 400);
     const seen = new Set();
     for (const r of body.rows) {
-      if (!r || Object.keys(r).some(k => !KEYS.includes(k)) || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(r.source_id) || seen.has(r.source_id) || !TABS.has(r.source_tab) || typeof r.publish !== 'boolean') return reply({ error: 'Invalid or duplicate Website ID' },400);
+      if (!r || Object.keys(r).some(k => !KEYS.includes(k) && k !== 'deal') || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(r.source_id) || seen.has(r.source_id) || !TABS.has(r.source_tab) || typeof r.publish !== 'boolean') return reply({ error: 'Invalid or duplicate Website ID' },400);
       seen.add(r.source_id);
+      if (r.deal !== undefined) {
+        const d = r.deal;
+        if (!d || typeof d !== 'object' || Array.isArray(d) || Object.keys(d).some(k => !['type','reference_price','reference_url','verified_at','expires_at'].includes(k)) || !['','distress','urgent','below-market'].includes(d.type) || ['reference_price','reference_url','verified_at','expires_at'].some(k => typeof d[k] !== 'string' || d[k].length > 500)) return reply({error:'Invalid deal fields'},400);
+        if (['verified_at','expires_at'].some(k => d[k] !== '' && (!/^\d{4}-\d{2}-\d{2}$/.test(d[k]) || !Number.isFinite(Date.parse(d[k]))))) return reply({error:'Use YYYY-MM-DD for deal dates'},400);
+      }
       if (KEYS.filter(k=>k!=='publish').some(k=>typeof r[k] !== 'string' || r[k].length>500)) return reply({ error: 'Invalid field' },400);
       if (r.publish && (!r.area.trim() || !r.building.trim() || !['ready','resale-off-plan'].includes(r.category) || !['Available','hidden','sold'].includes(r.status))) return reply({ error: 'Invalid property' },400);
     }

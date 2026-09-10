@@ -1,3 +1,4 @@
+import PropertyDealsSection from "./PropertyDealsSection";
 import AreaPropertyFilters from "./AreaPropertyFilters";
 import RegionGroupedListings from "./RegionGroupedListings";
 import ResponsiveNavbar from "./ResponsiveNavbar";
@@ -21,7 +22,7 @@ import { getRequestLocale } from "../lib/server-locale";
 const visibleAreaSlugs = ["palm-jumeirah", "downtown", "bluewaters", "meydan"];
 const primaryAreaOrder = ["Palm Jumeirah", "Downtown", "Bluewaters", "Meydan"];
 const primaryAreaNames = new Set(primaryAreaOrder);
-const searchKeys = ["q", "category", "bedrooms", "property_type", "min_price", "max_price", "handover"];
+const searchKeys = ["sort", "q", "category", "bedrooms", "property_type", "min_price", "max_price", "handover"];
 const promotionThreshold = 4;
 const primaryAreaFallbacks = {
   "palm-jumeirah": {
@@ -386,6 +387,7 @@ export default async function PropertiesInventoryPage({ searchParams, owner = "a
 
         {hasSearch || loadError ? null : (
           <section className="section listings-area-section">
+            <PropertyDealsSection properties={properties} locale={locale} />
             {inventoryType === "ready" || inventoryType === "resale-off-plan" || inventoryType === "all" ? (
               <RegionGroupedListings
                 properties={regionEligibleProperties}
