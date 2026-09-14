@@ -192,7 +192,7 @@ export default function AreaPropertyCard({
     property.bedrooms && !titleIncludesBedroomInfo(property.title, property.bedrooms)
       ? `${property.bedrooms} ${copy.br}`
       : "";
-  const specLine = [property.bedrooms ? `${property.bedrooms.replace(/beds?|bedrooms?/gi, "").trim()} ${copy.br}` : "", property.size ? `${property.size} ${locale === "fa" ? "فوت مربع" : "sq ft"}` : ""].filter(Boolean).join(" • ");
+  const specLine = [property.bedrooms ? `${String(property.bedrooms).replace(/bedrooms?|beds?/gi, "").trim()} ${copy.br}` : "", property.size ? `${property.size} ${locale === "fa" ? "فوت مربع" : "sq ft"}` : ""].filter(Boolean).join(" • ");
   const displayPrice = formatPriceDisplay(property.price, { locale });
   const imageSrc = getPropertyImage(property);
   const categoryLabel = categoryLabelForProperty(property, copy);

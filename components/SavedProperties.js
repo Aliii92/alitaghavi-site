@@ -5,7 +5,7 @@ import AreaPropertyCard from './AreaPropertyCard';
 import {formatPriceDisplay} from '../lib/price';
 export default function SavedProperties({locale='en'}){
  const p=usePropertyPreferences(),fa=locale==='fa';const [items,setItems]=useState([]),[state,setState]=useState('loading');
- useEffect(()=>{const c=new AbortController();fetch('/api/properties?owner=ali',{signal:c.signal}).then(r=>{if(!r.ok)throw Error();return r.json();}).then(d=>{setItems(d.items||[]);setState('ready');}).catch(e=>{if(e.name!=='AbortError')setState('error');});return()=>c.abort();},[]);
+ useEffect(()=>{const c=new AbortController();fetch('/api/properties?owner=ali',{signal:c.signal}).then(r=>{if(!r.ok)throw Error();return r.json();}).then(d=>{setItems(Array.isArray(d)?d:(d.items||[]));setState('ready');}).catch(e=>{if(e.name!=='AbortError')setState('error');});return()=>c.abort();},[]);
  if(state==='loading'||!p.ready)return <p role="status">{fa?'در حال بارگذاری…':'Loading…'}</p>;
  if(state==='error')return <p role="alert">{fa?'دریافت ملک‌ها انجام نشد. صفحه را دوباره بارگذاری کنید.':'Could not load properties. Please reload the page.'}</p>;
  const saved=items.filter(x=>p.saved.includes(x.id)),compare=p.compare.map(id=>items.find(x=>x.id===id)).filter(Boolean);

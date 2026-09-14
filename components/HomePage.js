@@ -11,6 +11,8 @@ import { localizeHomepageProjectCard } from "../lib/homepage-projects";
 import { localizePath } from "../lib/locale";
 import { resolveProjectImage } from "../lib/project-images";
 
+import {getPropertyDeal} from "../lib/property-deals.js";
+
 const whatsappNumber = "971522950316";
 const instagramUrl = "";
 const youtubeUrl = "https://www.youtube.com/@AliTaghavi";
@@ -813,7 +815,7 @@ export default function HomePage({ initialLocale = "en" }) {
   useEffect(() => {
     fetch("/api/properties?owner=ali")
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-      .then(data => { const items = extractApiItems(data); setDealProperties(items); setSelectedProperties([...items.filter(p => p.featured), ...items.filter(p => !p.featured)].slice(0, 6)); })
+      .then(data => { const items = extractApiItems(data); setDealProperties(items); setSelectedProperties([...items.filter(p => p.featured && !getPropertyDeal(p)), ...items.filter(p => !p.featured && !getPropertyDeal(p))].slice(0, 6)); })
       .catch(() => setSelectedProperties([]));
   }, []);
 
