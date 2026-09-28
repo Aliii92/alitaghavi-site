@@ -2,13 +2,16 @@
 
 The source is the existing **Dubai Listing 0521366006** workbook. New Listing is not read or deleted. Apps Script sends a strict allowlist of property fields to `dubai-listing-sync`; the website already reads these Supabase tables. No Vercel redeploy is needed for subsequent listing changes.
 
+Active source tabs are **Super Luxury**, **Palm Jumeirah**, **LUBA**, and **The Vally**. `OLGA` is not part of the automatic sync until its rows have stable, reconciled Website IDs.
+
 ## Activation
 
 1. Apply `supabase/listing-sync.sql`. Deploy the Edge Function with gateway JWT verification disabled **only because the handler authenticates a dedicated 256-bit sync token**. Never use the Supabase service key in Sheets.
 2. Generate a random 32-byte token. Store only its SHA-256 hex digest in `listing_sync_settings.token_hash`, with `enabled=true`. Keep the plaintext out of git, cells and logs.
-3. Add `Website ID`, `نمایش در سایت`, `وضعیت همگام‌سازی` columns to each source tab. Seed existing IDs via `listing_sheet_records` only after unambiguous matching. Leave new/ambiguous rows unchecked for review. Palm Jumeirah needs its missing header row inserted without overwriting its first property.
-4. In the source workbook's **Extensions → Apps Script**, add `DubaiListing.gs` and the manifest. Preserve unrelated existing scripts/triggers. Run `setupDubaiListingSync`, approve Google permissions and enter the dedicated token when prompted. The token is stored in Script Properties. Setup first verifies an actual sync, then installs a five-minute timer and an edit trigger.
-5. Verify a real price change and an unticked row through the public site, then restore the intended values. Verify media and private contact fields are preserved/excluded. Do not report automatic sync active until Google authorization and this check succeed.
+3. Add `Website ID`, `نمایش در سایت`, `وضعیت همگام‌سازی` columns to each source tab. Seed existing IDs via `listing_sheet_records` only after unambiguous matching. Leave new/ambiguous rows unchecked for review. Never activate the new sync while duplicate Website IDs remain.
+4. Disable the legacy Apps Script trigger that writes directly to `properties` / `resale_off_plan` with the Supabase service role before enabling the scoped-token sync. Do not run both writers at the same time.
+5. In the source workbook's **Extensions → Apps Script**, add `DubaiListing.gs` and the manifest. Preserve unrelated scripts/triggers. Run `setupDubaiListingSync`, approve Google permissions and enter the dedicated token when prompted. The token is stored in Script Properties. Setup first verifies an actual sync, then installs a five-minute timer and an edit trigger.
+6. Verify a real price change and an unticked row through the public site, then restore the intended values. Verify deal badges, media and private contact fields are preserved/excluded. Do not report automatic sync active until this check succeeds.
 
 ## Daily use
 
