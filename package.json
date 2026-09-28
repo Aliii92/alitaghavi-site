@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/sync-approved-market-insights.mjs && next build",
     "start": "next start",
     "supabase:import-local": "node scripts/import-local-data-to-supabase.mjs"
   },
