@@ -3,7 +3,7 @@ begin;
 update public.listing_sync_settings set enabled=true,last_sent_at=null where singleton;
 do $$
 declare
-  r jsonb := '{"source_id":"ffffffff-ffff-4fff-8fff-ffffffffffff","source_tab":"Dubai","publish":true,"area":"Test Area","building":"Test Building","property_type":"apartment","bedrooms":"2","size":"1234","price":"2000000","view":"Sea","category":"ready","status":"Available","handover":""}';
+  r jsonb := '{"source_id":"ffffffff-ffff-4fff-8fff-ffffffffffff","source_tab":"LUBA","publish":true,"area":"Test Area","building":"Test Building","property_type":"apartment","bedrooms":"2","size":"1234","price":"2000000","view":"Sea","category":"ready","status":"Available","handover":""}';
   payload jsonb; result jsonb; n integer;
 begin
   r := r || '{"deal":{"type":"urgent"}}';
@@ -35,7 +35,7 @@ begin
   r := r || '{"publish":true,"category":"ready"}';
   perform public.apply_listing_sheet_sync(jsonb_build_array(r),now()+interval '6 seconds');
   if not exists(select 1 from public.properties where id='dl-ffffffff-ffff-4fff-8fff-ffffffffffff' and status='Available' and notes='PRIVATE' and jsonb_array_length(gallery_images)=1) then raise exception 'FAIL: restore ready with media'; end if;
-r := r || '{"deal":{"type":""}}';
+  r := r || '{"deal":{"type":""}}';
   perform public.apply_listing_sheet_sync(jsonb_build_array(r),now()+interval '7 seconds');
   if not exists(select 1 from public.properties where id='dl-ffffffff-ffff-4fff-8fff-ffffffffffff' and deal->>'type'='') then raise exception 'FAIL: clear deal'; end if;
 end $$;
