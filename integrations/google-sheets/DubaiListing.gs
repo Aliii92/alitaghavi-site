@@ -1,7 +1,7 @@
 /** Bound to Dubai Listing only. No owner/contact/notes/media fields leave Google. */
 var DUBAI_SOURCE_ID = '13juJ4IeafSrSy5zqBplMq2Ht26pobB0Aaz-PiksMwHI';
 var DUBAI_SYNC_URL = 'https://cahqudrtshwtswnfkzdf.supabase.co/functions/v1/dubai-listing-sync';
-var DUBAI_TABS = ['Super Luxury', 'Palm Jumeirah', 'Dubai', 'The Vally'];
+var DUBAI_TABS = ['Super Luxury', 'Palm Jumeirah', 'LUBA', 'The Vally'];
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('سایت علی تقوی')
