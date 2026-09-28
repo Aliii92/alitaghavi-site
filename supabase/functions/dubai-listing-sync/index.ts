@@ -1,6 +1,6 @@
 // Custom scoped-token authentication is intentional; this is not a public write API.
 const SHEET_ID = '13juJ4IeafSrSy5zqBplMq2Ht26pobB0Aaz-PiksMwHI';
-const TABS = new Set(['Super Luxury', 'Palm Jumeirah', 'Dubai', 'The Vally']);
+const TABS = new Set(['Super Luxury', 'Palm Jumeirah', 'LUBA', 'The Vally']);
 const KEYS = ['source_id','source_tab','publish','area','building','property_type','bedrooms','size','price','view','category','status','handover'];
 const reply = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 async function db(path: string, init: RequestInit = {}) {
