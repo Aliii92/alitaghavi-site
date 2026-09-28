@@ -9,6 +9,8 @@ const map=(r)=>JSON.parse(JSON.stringify(sandbox.mapDubaiListingRow(r,header,'Pa
 assert.equal(map(row).status,'Available');
 assert.equal(map(row).category,'ready');
 assert.equal(map(row).price,'5,000,000');
+// Subordinate rows of a merged package-price cell have no individual asking price.
+const mergedPrice=row.slice();mergedPrice[9]='';assert.equal(map(mergedPrice).price,'On Request');
 assert.equal(map(row).publish,true);
 const unavailable=row.slice();unavailable[8]='Not Available';assert.equal(map(unavailable).status,'hidden');
 const sold=row.slice();sold[8]='Sold';assert.equal(map(sold).status,'sold');

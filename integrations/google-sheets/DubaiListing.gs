@@ -55,7 +55,7 @@ function mapDubaiListingRow(row, header, tab) {
     source_id: value('Website ID'), source_tab: tab,
     publish: publishValue === true || String(publishValue).toUpperCase() === 'TRUE',
     area: value('AREA'), building: value('BUILDING'), property_type: value('TYPE').toLowerCase(),
-    bedrooms: value('BEDROOMS'), size: value('BUA (SQFT)'), price: value('PRICE (AED)'),
+    bedrooms: value('BEDROOMS'), size: value('BUA (SQFT)'), price: value('PRICE (AED)') || 'On Request',
     view: value('VIEW'), category: category, status: sold ? 'sold' : hidden ? 'hidden' : 'Available',
     handover: /^(available|not available|unavailable|sold)$/i.test(value('HANDOVER')) ? '' : value('HANDOVER'),
     deal: { type: ({'دیسترس':'distress','فروش فوری':'urgent','زیر قیمت بازار':'below-market'})[value('نوع فرصت سایت')] || '',

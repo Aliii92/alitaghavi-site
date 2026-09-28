@@ -18,6 +18,7 @@ Active source tabs are **Super Luxury**, **Palm Jumeirah**, **LUBA**, and **The 
 - Edit the existing workbook only. Tick `نمایش در سایت` to publish a row.
 - Untick to hide a property; do this before deleting its row. Missing rows never delete stored properties.
 - Never copy `Website ID` into a different unit. Blank IDs are generated automatically; duplicates abort the whole batch.
+- Blank individual prices (including subordinate rows of a merged package-price cell) publish as `On Request`; the package price is not copied to each unit.
 - `STATUS` is the construction/occupancy stage and `HANDOVER` also carries availability in this workbook. `Not Available`/`Sold` hides a row even if checked. Rented units with `Available` remain available for sale.
 - Media, descriptions, featured flags and internal notes remain managed in the admin panel. Owner names, phone numbers, unit numbers, notes and media cells are never sent by the sync.
 - New Listing can be retained as an archive until any external legacy automation is identified and disabled. No unrelated automation is removed automatically.
