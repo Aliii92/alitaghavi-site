@@ -17,14 +17,6 @@ function SectionHeader({ eyebrow, title, text, centered = true, dark = false, cl
   );
 }
 
-function YouTubeIcon() {
-  return (
-    <svg className="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M21.6 7.2s-.2-1.5-.8-2.1c-.8-.8-1.7-.8-2.1-.9C15.8 4 12 4 12 4s-3.8 0-6.7.2c-.4 0-1.3.1-2.1.9-.6.6-.8 2.1-.8 2.1S2.2 9 2.2 10.8v1.7c0 1.8.2 3.6.2 3.6s.2 1.5.8 2.1c.8.8 1.9.8 2.4.9 1.7.2 6.4.2 6.4.2s3.8 0 6.7-.2c.4-.1 1.3-.1 2.1-.9.6-.6.8-2.1.8-2.1s.2-1.8.2-3.6v-1.7c0-1.8-.2-3.6-.2-3.6ZM10.1 14.7V8.5l5.8 3.1-5.8 3.1Z" />
-    </svg>
-  );
-}
-
 function WhatsAppIcon() {
   return (
     <svg className="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -164,7 +156,6 @@ export default function ProfileHomePage({
   const socialLinks = [
     { href: contact.whatsappHref, label: contact.whatsapp || "WhatsApp", icon: <WhatsAppIcon />, className: "social-icon-whatsapp" },
     { href: contact.instagramHref, label: contact.instagram || "Instagram", icon: <InstagramIcon />, className: "social-icon-instagram" },
-    { href: contact.youtubeHref, label: contact.youtube || "YouTube", icon: <YouTubeIcon />, className: "social-icon-youtube" },
     ...(contact.linkedinHref ? [{ href: contact.linkedinHref, label: contact.linkedin || "LinkedIn", icon: <LinkedInIcon />, className: "social-icon-linkedin" }] : [])
   ].filter((item) => item.href);
 
