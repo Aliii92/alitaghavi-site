@@ -44,7 +44,8 @@ export default function BuildingGroupedListings({
   phoneNumber = "971522950316",
   owner = "ali",
   initialVisiblePerGroup = 3,
-  locale = "en"
+  locale = "en",
+  returnTo = ""
 }) {
   const copy = groupCopy[locale === "fa" ? "fa" : "en"];
   const [expandedGroups, setExpandedGroups] = useState({});
@@ -126,6 +127,7 @@ export default function BuildingGroupedListings({
                   phoneNumber={phoneNumber}
                   owner={owner}
                   locale={locale}
+                  returnTo={returnTo}
                 />
               ))}
             </div>

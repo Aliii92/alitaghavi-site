@@ -1,6 +1,8 @@
 "use client";
 import { comparePropertyDeals } from "../lib/property-deals.js";
 import { getNumericPrice } from "../lib/price";
+import { localizePath } from "../lib/locale.js";
+import { canonicalPropertyArea, matchesPropertyArea, matchesPropertyQuery } from "../lib/property-search.js";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -51,6 +53,9 @@ const searchCopy = {
     priceLowHigh: "Price low to high",
     priceHighLow: "Price high to low",
     allAreas: "All areas",
+    area: "Area",
+    popularAreas: "Quick area search",
+    showMore: "Show more properties",
     trust: ["Curated shortlists", "Private WhatsApp follow-up", "Advisor-led guidance"],
     emptyTitle: "No properties match these filters",
     emptyBody: (areaName) =>
@@ -100,6 +105,9 @@ const searchCopy = {
     priceLowHigh: "قیمت از کم به زیاد",
     priceHighLow: "قیمت از زیاد به کم",
     allAreas: "همه مناطق",
+    area: "منطقه",
+    popularAreas: "انتخاب سریع منطقه",
+    showMore: "نمایش فایل‌های بیشتر",
     trust: ["گزینه‌های منتخب", "پیگیری خصوصی در واتساپ", "راهنمایی مشاوره‌ای"],
     emptyTitle: "ملکی با این فیلترها پیدا نشد",
     emptyBody: (areaName) =>
@@ -331,6 +339,7 @@ export default function AreaPropertyFilters({
   const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
   const [bedrooms, setBedrooms] = useState("all");
+  const [selectedArea, setSelectedArea] = useState("all");
   const [category, setCategory] = useState(defaultCategory);
   const [propertyType, setPropertyType] = useState("all");
   const [minPrice, setMinPrice] = useState("");
@@ -338,7 +347,34 @@ export default function AreaPropertyFilters({
   const [handover, setHandover] = useState("all");
   const [sortBy, setSortBy] = useState("recommended");
   const [activeDropdown, setActiveDropdown] = useState("");
+  const [visibleCount, setVisibleCount] = useState(24);
+  const [returnTo, setReturnTo] = useState("");
   const shouldShowResults = showResults || searchSubmitted;
+  const areaOptions = useMemo(() => {
+    const grouped = new Map();
+    properties.forEach((property) => {
+      if (!isPubliclyVisibleProperty(property)) return;
+      if (category !== "all" && property.category !== category) return;
+      const label = String(property.area || "").trim();
+      if (!label) return;
+      const key = canonicalPropertyArea(label);
+      const existing = grouped.get(key);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        grouped.set(key, { value: key, label, count: 1 });
+      }
+    });
+    const available = [...grouped.values()].sort((a, b) => a.label.localeCompare(b.label, "en"));
+    return [{ value: "all", label: t.allAreas }, ...available];
+  }, [category, properties, t.allAreas]);
+  const quickAreas = useMemo(() => {
+    const priorities = ["downtown", "palm jumeirah", "dubai marina", "business bay", "mudon", "the valley"];
+    const available = areaOptions.slice(1);
+    const preferred = priorities.map((key) => available.find((area) => area.value === key)).filter(Boolean);
+    const remaining = available.filter((area) => !preferred.includes(area)).sort((a, b) => b.count - a.count);
+    return [...preferred, ...remaining].slice(0, 6);
+  }, [areaOptions]);
   const routeMap = useMemo(
     () => ({
       all: "/listings",
@@ -356,6 +392,7 @@ export default function AreaPropertyFilters({
 
     setSearchInput(nextQuery);
     setQuery(nextQuery);
+    setSelectedArea(params.get("area") || "all");
     setBedrooms(params.get("bedrooms") || "all");
     setCategory(params.get("category") || defaultCategory);
     setPropertyType(params.get("property_type") || "all");
@@ -363,10 +400,14 @@ export default function AreaPropertyFilters({
     setMaxPrice(params.get("max_price") || "");
     setHandover(params.get("handover") || "all");
     setSortBy(params.get("sort") || "recommended");
+    setReturnTo(`${window.location.pathname}${window.location.search}`);
   }, [defaultCategory]);
 
+  useEffect(() => {
+    setVisibleCount(24);
+  }, [query, selectedArea, bedrooms, category, propertyType, minPrice, maxPrice, handover, sortBy]);
+
   const filteredProperties = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
     const minBudget = minPrice ? parsePrice(minPrice) : 0;
     const maxBudget = maxPrice ? parsePrice(maxPrice) : Infinity;
 
@@ -385,6 +426,7 @@ export default function AreaPropertyFilters({
             ? bedroomCount >= 8
             : bedroomCount === Number(bedrooms));
       const matchesCategory = category === "all" || property.category === category;
+      const matchesArea = matchesPropertyArea(property.area, selectedArea);
       const matchesPropertyType = propertyType === "all" || normalizePropertyType(property.property_type || property.title) === propertyType;
       const matchesPrice = (!(minPrice || maxPrice) || propertyPrice > 0) && (!minPrice || propertyPrice >= minBudget) && (!maxPrice || propertyPrice <= maxBudget);
       const handoverYear = extractHandoverYear(property);
@@ -392,23 +434,9 @@ export default function AreaPropertyFilters({
         !["off-plan", "resale-off-plan"].includes(category) ||
         handover === "all" ||
         (handover === "2028-plus" ? handoverYear >= 2028 : handoverYear === Number(handover));
-      const searchableText = [
-        property.area,
-        property.building,
-        property.title,
-        property.size,
-        property.view,
-        property.short_description,
-        property.property_type,
-        property.handoverDate,
-        property.handover_date
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      const matchesQuery = !normalizedQuery || searchableText.includes(normalizedQuery);
+      const matchesQuery = matchesPropertyQuery(property, query);
 
-      return matchesBedrooms && matchesCategory && matchesPropertyType && matchesPrice && matchesHandover && matchesQuery;
+      return matchesBedrooms && matchesCategory && matchesArea && matchesPropertyType && matchesPrice && matchesHandover && matchesQuery;
     });
 
     const withIndex = nextProperties.map((property, index) => ({ property, index }));
@@ -440,21 +468,23 @@ export default function AreaPropertyFilters({
     });
 
     return withIndex.map((item) => item.property);
-  }, [bedrooms, category, handover, maxPrice, minPrice, properties, propertyType, query, sortBy]);
+  }, [bedrooms, category, handover, maxPrice, minPrice, properties, propertyType, query, selectedArea, sortBy]);
 
   function buildListingsUrl(overrides = {}) {
     const nextSearchInput = overrides.searchInput ?? searchInput;
     const nextCategory = overrides.category ?? category;
     const nextBedrooms = overrides.bedrooms ?? bedrooms;
+    const nextArea = overrides.area ?? selectedArea;
     const nextPropertyType = overrides.propertyType ?? propertyType;
     const nextMinPrice = overrides.minPrice ?? minPrice;
     const nextMaxPrice = overrides.maxPrice ?? maxPrice;
     const nextHandover = overrides.handover ?? handover;
-    const targetBase = routeMap[nextCategory] || redirectBase;
+    const targetBase = localizePath(routeMap[nextCategory] || redirectBase, locale);
     const params = new URLSearchParams();
     if (nextSearchInput.trim()) params.set("q", nextSearchInput.trim());
     if (nextCategory !== defaultCategory || nextCategory === "all") params.set("category", nextCategory);
     if (nextBedrooms !== "all") params.set("bedrooms", nextBedrooms);
+    if (nextArea !== "all") params.set("area", nextArea);
     if (nextPropertyType !== "all") params.set("property_type", nextPropertyType);
     if (nextMinPrice) params.set("min_price", nextMinPrice);
     if (nextMaxPrice) params.set("max_price", nextMaxPrice);
@@ -483,6 +513,7 @@ export default function AreaPropertyFilters({
     setSearchInput("");
     setQuery("");
     setBedrooms("all");
+    setSelectedArea("all");
     setCategory(defaultCategory);
     setPropertyType("all");
     setMinPrice("");
@@ -491,29 +522,31 @@ export default function AreaPropertyFilters({
     setSortBy("recommended");
     setSearchSubmitted(showResults);
 
-    const clearBase = routeMap[defaultCategory] || redirectBase;
+    const clearBase = localizePath(routeMap[defaultCategory] || redirectBase, locale);
     const currentSearch = window.location.search;
     const shouldNavigate =
       pathname !== clearBase ||
       currentSearch ||
       category !== defaultCategory ||
       bedrooms !== "all" ||
+      selectedArea !== "all" ||
       propertyType !== "all" ||
       minPrice ||
       maxPrice ||
       handover !== "all";
 
-    if (shouldNavigate && !(pathname === "/" && defaultCategory === "all")) {
+    if (shouldNavigate && !(["/", "/fa"].includes(pathname) && defaultCategory === "all")) {
       navigateTo(clearBase);
     }
   }
 
   const activeFilterParts = [
-    query && { label: query, clear: () => {setQuery("");setSearchInput("");} },
-    propertyType !== "all" && {label: propertyTypeOptions.find(o => o.value === propertyType)?.label || propertyType, clear: () => setPropertyType("all")},
-    bedrooms !== "all" && {label: bedroomOptions.find(o => o.value === bedrooms)?.label || bedrooms, clear: () => setBedrooms("all")},
-    (minPrice || maxPrice) && {label: `${minPrice || t.min} – ${maxPrice || t.max}`, clear: () => {setMinPrice("");setMaxPrice("");}},
-    handover !== "all" && {label: handover, clear: () => setHandover("all")}
+    query && { label: query, clear: () => navigateTo(buildListingsUrl({ searchInput: "" })) },
+    selectedArea !== "all" && {label: areaOptions.find(o => o.value === selectedArea)?.label || selectedArea, clear: () => navigateTo(buildListingsUrl({ area: "all" }))},
+    propertyType !== "all" && {label: propertyTypeOptions.find(o => o.value === propertyType)?.label || propertyType, clear: () => navigateTo(buildListingsUrl({ propertyType: "all" }))},
+    bedrooms !== "all" && {label: bedroomOptions.find(o => o.value === bedrooms)?.label || bedrooms, clear: () => navigateTo(buildListingsUrl({ bedrooms: "all" }))},
+    (minPrice || maxPrice) && {label: `${minPrice || t.min} – ${maxPrice || t.max}`, clear: () => navigateTo(buildListingsUrl({ minPrice: "", maxPrice: "" }))},
+    handover !== "all" && {label: handover, clear: () => navigateTo(buildListingsUrl({ handover: "all" }))}
   ].filter(Boolean);
 
   function handleCategoryChange(value) {
@@ -524,6 +557,16 @@ export default function AreaPropertyFilters({
     const nextUrl = buildListingsUrl({ category: value, handover: nextHandover });
     if (nextUrl !== `${pathname}${window.location.search}`) {
       navigateTo(nextUrl);
+    }
+  }
+
+  function selectQuickArea(value) {
+    setSelectedArea(value);
+    const nextUrl = buildListingsUrl({ area: value });
+    if (redirectMode || nextUrl !== `${pathname}${window.location.search}`) {
+      navigateTo(nextUrl);
+    } else {
+      setSearchSubmitted(true);
     }
   }
 
@@ -544,6 +587,7 @@ export default function AreaPropertyFilters({
           </div>
         </label>
 
+        <FilterDropdown id="area" label={t.area} value={selectedArea} options={areaOptions} activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown} onChange={setSelectedArea} />
         {!hideCategory ? (
           <FilterDropdown id="category" label={t.category} value={category} options={statusOptions} activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown} onChange={handleCategoryChange} />
         ) : null}
@@ -561,6 +605,17 @@ export default function AreaPropertyFilters({
           {t.clear}
         </button>
       </form>
+
+      {quickAreas.length > 0 ? (
+        <div className="property-quick-areas" aria-label={t.popularAreas}>
+          <span>{t.popularAreas}</span>
+          {quickAreas.map((area) => (
+            <button key={area.value} type="button" aria-pressed={area.value === selectedArea} onClick={() => selectQuickArea(area.value)}>
+              {area.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       <div className="property-search-meta">
         <div className="property-search-meta-summary">
@@ -598,10 +653,11 @@ export default function AreaPropertyFilters({
               owner={owner}
               initialVisiblePerGroup={initialVisiblePerGroup}
               locale={locale}
+              returnTo={returnTo}
             />
           ) : (
           <div className="three-column-grid all-listings-grid">
-            {filteredProperties.map((property) => (
+            {filteredProperties.slice(0, visibleCount).map((property) => (
               <AreaPropertyCard
                 key={property.id}
                 property={property}
@@ -611,6 +667,7 @@ export default function AreaPropertyFilters({
                 phoneNumber={phoneNumber}
                 owner={owner}
                 locale={locale}
+                returnTo={returnTo}
               />
             ))}
           </div>
@@ -622,6 +679,13 @@ export default function AreaPropertyFilters({
           </article>
         )
       )}
+      {!redirectMode && shouldShowResults && !groupByBuilding && filteredProperties.length > visibleCount ? (
+        <div className="property-load-more">
+          <button type="button" className="button secondary-button" onClick={() => setVisibleCount((count) => count + 24)}>
+            {t.showMore} ({Math.min(filteredProperties.length - visibleCount, 24)})
+          </button>
+        </div>
+      ) : null}
     </>
   );
 }

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { readProperties, isPubliclyVisibleProperty } from "../../../lib/properties";
 import { getRequestLocale } from "../../../lib/server-locale";
 import { localizePath } from "../../../lib/locale";
+import { safePropertyReturnPath } from "../../../lib/property-return-path.js";
 import PropertyGallery from "../../../components/PropertyGallery";
 import PropertySaveActions from "../../../components/PropertySaveActions";
 import PropertyDealBadge from "../../../components/PropertyDealBadge";
@@ -25,21 +26,24 @@ export async function generateMetadata({ params }) {
     twitter: { title: property.title, images: property.image_url ? [new URL(property.image_url, "https://www.alitaghavi.ae").href] : [] }
   };
 }
-export default async function PropertyPage({ params }) {
+export default async function PropertyPage({ params, searchParams }) {
   const { id } = await params;
-  const [property, locale] = await Promise.all([findProperty(id), getRequestLocale()]);
+  const [property, locale, queryParams] = await Promise.all([findProperty(id), getRequestLocale(), searchParams]);
   if (!property) notFound();
   const fa = locale === "fa";
   const href = path => localizePath(path, locale);
+  const backHref = safePropertyReturnPath(queryParams?.from, locale, "/listings");
   const pageUrl = `https://www.alitaghavi.ae${href(`/properties/${encodeURIComponent(id)}`)}`;
   const message = `${fa ? "سلام علی، درباره این ملک اطلاعات بیشتری می‌خواهم:" : "Hi Ali, I would like more details about this property:"}\n${property.title}\n${property.building} · ${property.area}\n${formatPriceDisplay(property.price, { locale })}\n${pageUrl}`;
   const whatsapp = `https://wa.me/971522950316?text=${encodeURIComponent(message)}`;
   const specs = [[fa ? "تعداد خواب" : "Bedrooms",property.bedrooms], [fa ? "زیربنا (فوت مربع)" : "Built-up area (sq ft)",property.size], [fa ? "پلات (فوت مربع)" : "Plot (sq ft)",property.plot_size], [fa ? "چشم‌انداز" : "View",property.view], [fa ? "مبلمان" : "Furnishing",property.furnishing], [fa ? "وضعیت" : "Status",({Available:fa?"موجود":"Available",ready:fa?"آماده":"Ready",vacant:fa?"خالی":"Vacant"})[property.status]||property.status], [fa ? "تحویل" : "Handover",property.handover]].filter(([,v])=>v);
-  const images = [...new Set([getPropertyImage(property), ...(property.gallery_images || [])])];
+  const galleryImages = Array.isArray(property.gallery_images) ? property.gallery_images : [];
+  const images = [...new Set([getPropertyImage(property, ""), ...galleryImages].filter(Boolean))];
+  if (!images.length) images.push(getPropertyImage(property));
   return <main className={`luxury-page property-detail ${fa ? "rtl" : ""}`}>
     <ResponsiveNavbar brandLabel="Ali Taghavi" brandHref={href("/")} locale={locale} links={[{ href:href("/ready-properties"),label:fa ? "املاک آماده" : "Ready properties" },{href:href("/resale-off-plan"),label:fa ? "ریسل آف‌پلن" : "Resale off-plan"},{href:href("/#contact"),label:fa ? "مشاوره" : "Consultation"}]} />
     <div className="content-shell detail-shell">
-      <a className="detail-back" href={href("/listings")}>{fa ? "بازگشت به املاک" : "Back to properties"}</a>
+      <a className="detail-back" href={backHref}>{fa ? "بازگشت به نتایج جستجو" : "Back to search results"}</a>
       <PropertyDealBadge property={property} locale={locale} details />
       <div className="detail-heading"><div><p className="section-eyebrow">{property.area} / {property.building}</p><h1>{property.title}</h1></div><strong className="detail-price" dir="ltr">{formatPriceDisplay(property.price,{locale})}</strong></div>
       <PropertySaveActions propertyId={id} locale={locale} />

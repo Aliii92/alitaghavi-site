@@ -22,7 +22,7 @@ import { getRequestLocale } from "../lib/server-locale";
 const visibleAreaSlugs = ["palm-jumeirah", "downtown", "bluewaters", "meydan"];
 const primaryAreaOrder = ["Palm Jumeirah", "Downtown", "Bluewaters", "Meydan"];
 const primaryAreaNames = new Set(primaryAreaOrder);
-const searchKeys = ["sort", "q", "category", "bedrooms", "property_type", "min_price", "max_price", "handover"];
+const searchKeys = ["sort", "q", "area", "category", "bedrooms", "property_type", "min_price", "max_price", "handover"];
 const promotionThreshold = 4;
 const primaryAreaFallbacks = {
   "palm-jumeirah": {

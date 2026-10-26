@@ -3514,3 +3514,28 @@ button:disabled{opacity:.55;cursor:not-allowed}.comparison-scroll{overflow:auto;
 @media(max-width:760px){.luxury-page .hero-section{min-height:430px;padding-block:80px 50px}.hero-inner h1{font-size:clamp(30px,8vw,42px);line-height:1.45}.hero-description{font-size:15px}.luxury-page .homepage-search-section{padding:20px 14px;margin-top:20px}.section{padding-block:42px}.content-shell{width:calc(100% - 32px)}.property-search-panel{display:flex;flex-wrap:wrap;gap:10px}.property-search-panel>div{min-width:0;flex:1 1 42%}.property-search-panel .property-search-keyword{flex-basis:100%}.property-search-button{min-height:48px;width:100%}.property-search-meta{align-items:flex-start;gap:16px;flex-wrap:wrap}.property-search-active-filters{flex-wrap:wrap}.property-sort-control select{min-height:44px}.compact-listing-card .listing-content{padding:18px}.property-detail{padding-bottom:100px}.mobile-property-contact{display:flex;position:fixed;bottom:0;inset-inline:0;z-index:40;background:#fffffff5;border-top:1px solid var(--buyer-border);padding:12px 16px calc(12px + env(safe-area-inset-bottom));align-items:center;gap:12px;justify-content:space-between;box-shadow:0 -5px 24px #14382e10}.mobile-property-contact>span{font-size:13px;direction:ltr}.mobile-property-contact .button{font-size:13px;min-height:46px}.saved-nav{font-size:11px;max-width:110px;white-space:normal;text-align:center}.gallery-open{height:300px}.detail-heading h1{font-size:28px}.comparison-table th,.comparison-table td{padding:14px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 html[lang=fa] body{font-family:Tahoma,"Segoe UI",sans-serif;line-height:1.9}html[lang=fa] h1,html[lang=fa] h2,html[lang=fa] h3{letter-spacing:0;line-height:1.6}
+
+/* Listing discovery: make the search visible earlier and surface popular areas. */
+.luxury-page .hero-section { min-height: 440px; padding-block: 0; }
+.luxury-page .hero-inner { padding-block: 72px 80px; }
+.luxury-page .homepage-search-section { margin-top: -26px; position: relative; z-index: 2; }
+@media (min-width: 1101px) {
+  .luxury-page .property-search-panel {
+    grid-template-columns: minmax(205px, 2fr) repeat(5, minmax(100px, 1fr)) auto auto;
+    gap: 4px;
+  }
+}
+.property-quick-areas { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 4px 0 20px; }
+.property-quick-areas > span { color: var(--buyer-muted); font-size: 13px; font-weight: 650; margin-inline-end: 6px; }
+.property-quick-areas button { cursor: pointer; background: #f2f6f4; border: 1px solid #d7e4de; color: #24483f; font: inherit; font-size: 13px; padding: 8px 14px; border-radius: 40px; min-height: 38px; }
+.property-quick-areas button:hover, .property-quick-areas button[aria-pressed="true"] { background: #dceee7; border-color: #438879; }
+.property-load-more { display: flex; justify-content: center; margin: 28px 0 12px; }
+.property-load-more .button { min-width: 220px; }
+@media (max-width: 760px) {
+  .luxury-page .hero-section { min-height: 370px; padding-block: 0; }
+  .luxury-page .hero-inner { padding-block: 54px 58px; }
+  .luxury-page .homepage-search-section { margin-top: -16px; }
+  .property-quick-areas { gap: 7px; }
+  .property-quick-areas > span { width: 100%; }
+  .property-quick-areas button { font-size: 12px; padding-inline: 12px; }
+}
