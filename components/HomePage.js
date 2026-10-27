@@ -887,6 +887,7 @@ export default function HomePage({ initialLocale = "en" }) {
         filtersProps: {
           mode: "redirect",
           areaName: "Dubai",
+          properties: dealProperties,
           redirectBase: localizePath("/ready-properties", locale),
           redirectBaseByCategory: {
             all: localizePath("/listings", locale),

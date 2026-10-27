@@ -181,7 +181,8 @@ export default function AreaPropertyCard({
   advisorName = "Ali Taghavi",
   sourcePage = "",
   phoneNumber = defaultWhatsAppNumber,
-  locale = "en"
+  locale = "en",
+  returnTo = ""
 }) {
   const pathname = usePathname();
   const copy = cardCopy[locale === "fa" ? "fa" : "en"];
@@ -197,7 +198,8 @@ export default function AreaPropertyCard({
   const imageSrc = getPropertyImage(property);
   const categoryLabel = categoryLabelForProperty(property, copy);
   const occupancyLabel = occupancyLabelForProperty(property, copy);
-  const detailsHref = `${locale === "fa" ? "/fa" : ""}/properties/${encodeURIComponent(property.id)}`;
+  const listingPath = returnTo || pathname;
+  const detailsHref = `${locale === "fa" ? "/fa" : ""}/properties/${encodeURIComponent(property.id)}${listingPath ? `?from=${encodeURIComponent(listingPath)}` : ""}`;
 
   return (
     <article className="listing-card compact-listing-card">
